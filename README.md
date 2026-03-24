@@ -32,3 +32,4 @@ Legacy endpoint:
 ## Notes
 - Keep architecture lightweight PHP (no heavy framework migration).
 - Admin-visible time should be treated as Asia/Shanghai.
+- Database connection requires environment variables: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`.

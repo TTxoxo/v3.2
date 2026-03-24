@@ -4,6 +4,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-API-KEY');
+header('Vary: Origin');
 
 $config = require __DIR__ . '/../config/config.php';
 require __DIR__ . '/../config/database.php';
@@ -11,7 +12,26 @@ require __DIR__ . '/helpers/MailService.php';
 require __DIR__ . '/helpers/Ga4Service.php';
 require __DIR__ . '/helpers/GoogleAdsService.php';
 
+function send_preflight_headers(): void
+{
+    $origin = trim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
+    if ($origin !== '') {
+        header('Access-Control-Allow-Origin: ' . $origin);
+    }
+
+    $requestedHeaders = trim((string) ($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ?? ''));
+    if ($requestedHeaders !== '') {
+        header('Access-Control-Allow-Headers: ' . $requestedHeaders);
+    } else {
+        header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-API-KEY');
+    }
+
+    header('Access-Control-Allow-Methods: POST, OPTIONS');
+    header('Access-Control-Max-Age: 600');
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+    send_preflight_headers();
     http_response_code(204);
     exit;
 }
@@ -425,6 +445,18 @@ try {
     $safeTel = htmlspecialchars((string) $builtinValues['tel'], ENT_QUOTES, 'UTF-8');
     $safeMessage = nl2br(htmlspecialchars((string) $builtinValues['message'], ENT_QUOTES, 'UTF-8'));
 
+    $customRowsHtml = '';
+    foreach ($customPayload as $key => $value) {
+        $label = (string) ($definitionMap[$key]['label'] ?? $key);
+        $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+        $safeValue = nl2br(htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'));
+        $customRowsHtml .= '<tr><td style="padding:8px 0;color:#6b7280;">' . $safeLabel . '</td><td style="padding:8px 0;word-break:break-word;">' . $safeValue . '</td></tr>';
+    }
+
+    $customSectionHtml = $customRowsHtml !== ''
+        ? '<tr><td style="padding:8px 0 4px;color:#374151;font-weight:700;" colspan="2">自定义字段</td></tr>' . $customRowsHtml
+        : '';
+
     $mailHtml = '
     <div style="margin:0;padding:24px;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;line-height:1.6;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:760px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
@@ -434,6 +466,7 @@ try {
           <tr><td style="padding:8px 0;color:#6b7280;">邮箱</td><td style="padding:8px 0;">' . $safeEmail . '</td></tr>
           <tr><td style="padding:8px 0;color:#6b7280;">电话</td><td style="padding:8px 0;">' . $safeTel . '</td></tr>
           <tr><td style="padding:8px 0;color:#6b7280;">内容</td><td style="padding:8px 0;word-break:break-word;">' . $safeMessage . '</td></tr>
+          ' . $customSectionHtml . '
         </table></td></tr>
       </table>
     </div>';

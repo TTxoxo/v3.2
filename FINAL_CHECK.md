@@ -59,6 +59,10 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 - **Status:** PASS
 - **Evidence:** `api/submit.php` checks API key/site binding and strict normalized origin host match against site domain; rejects invalid/missing origin context.
 
+### Rule 9.1: Cross-origin preflight compatibility for official submit endpoint
+- **Status:** PASS
+- **Evidence:** `api/submit.php` `OPTIONS` now returns complete CORS preflight headers before exit.
+
 ### Rule 10: Frontend supports both inline and floating modes
 - **Status:** PASS
 - **Evidence:** `embed/embed.js` supports `display=inline` and default floating mode.
@@ -93,6 +97,8 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 
 ### Legacy/dead code checks
 - ✅ `rg -n "embed/form.js|/embed/form.js|inquiry_submit.php" -g '!vendor/**'`
+- ✅ `rg -n "login_attempts|is_success|DATE_SUB\\(NOW\\(\\), INTERVAL 15 MINUTE\\)" admin/login.php database/migrations/*.sql`
+- ✅ `rg -n "Access-Control-Allow-Origin|Access-Control-Allow-Methods|Access-Control-Allow-Headers|OPTIONS" api/submit.php`
 
 ---
 
@@ -110,6 +116,8 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 4. **Compatibility bridges intentionally retained**
    - `forms.fields_json` remains synchronized as compatibility bridge while `form_fields` is primary.
    - `form_logs` -> `inquiry_logs` trigger bridge retained during transition.
+5. **`site_users` lifecycle remains schema-first**
+   - Constraint is enforced at DB level; dedicated site-user login/portal workflow is still deferred.
 
 ---
 

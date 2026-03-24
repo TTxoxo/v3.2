@@ -26,6 +26,7 @@ This release finalizes a lightweight-PHP refactor for multi-site inquiry managem
 ## 3) Submit/security changes
 - Official endpoint fixed to `POST /api/submit.php`.
 - Legacy `POST /api/inquiry_submit.php` now explicit `410 Gone` deprecation stub.
+- Added complete CORS preflight response handling for `OPTIONS` on `api/submit.php` to support browser cross-origin embed submission.
 - Submit now requires both:
   - valid API key bound to site,
   - strict origin/referer host match to normalized site domain.
@@ -43,6 +44,7 @@ This release finalizes a lightweight-PHP refactor for multi-site inquiry managem
 - Form editor now persists to `form_fields` and syncs `fields_json` for compatibility.
 - Inquiry list/detail render custom payload with label mapping.
 - Admin-visible time unified with Asia/Shanghai helper formatting.
+- Admin login rate limiting now uses persistent `login_attempts` table (`username + ip + 15-minute window`) with session fallback for old deployments.
 
 ## 5) Frontend embed changes
 - `embed/embed.js` supports both `inline` and `floating` modes.
@@ -76,3 +78,4 @@ Recommended staged rollout:
 - **Deprecated:** `api/inquiry_submit.php` (explicit 410).
 - **Deprecated compatibility stub:** `embed/form.js`.
 - **Temporarily retained:** `forms.fields_json`, `form_logs` compatibility bridge.
+- **Schema ready but not fully productized:** `site_users` lifecycle (currently structural enforcement, not a full site-user portal workflow).

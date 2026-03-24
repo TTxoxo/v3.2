@@ -160,3 +160,30 @@
 ### Delivery documentation
 - Added `RELEASE_NOTES.md` with rollout/rollback and migration cautions.
 - Updated release/handoff docs to align with implemented codebase and stabilization scope.
+
+## 2026-03-24 - Post-review hardening fixes round
+
+### Submit CORS preflight compatibility
+- `api/submit.php` now returns complete CORS headers for `OPTIONS` preflight requests:
+  - `Access-Control-Allow-Origin`
+  - `Vary: Origin`
+  - `Access-Control-Allow-Methods`
+  - `Access-Control-Allow-Headers`
+- Strict origin/site/api-key validation remains enforced on actual `POST` submit path.
+
+### Admin login persistent rate limiting
+- `admin/login.php` now integrates `login_attempts` table for persistent throttling (`username + ip`, 15-minute window, max 5 failures).
+- Added compatibility fallback to session-only counting when old deployments do not yet have `login_attempts`.
+
+### Secrets hardening
+- `config/database.php` no longer contains default DB credential fallbacks.
+- DB connection now requires environment variables: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`.
+
+### Mail notification completeness
+- `api/submit.php` email content now includes a “自定义字段” section rendered from validated custom payload fields with label mapping.
+
+### Documentation consistency
+- Updated `SUBMIT_FLOW.md`, `FINAL_CHECK.md`, and `RELEASE_NOTES.md` to reflect:
+  - CORS preflight behavior,
+  - persistent admin login throttling status,
+  - current compatibility posture (`form_logs`/`inquiry_logs`, `site_users` lifecycle scope).

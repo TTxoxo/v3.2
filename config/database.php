@@ -6,6 +6,16 @@ if ($phpTz !== '') {
     date_default_timezone_set($phpTz);
 }
 
+function env_required(string $key): string
+{
+    $value = getenv($key);
+    if ($value === false || trim($value) === '') {
+        throw new RuntimeException("Missing required environment variable: {$key}");
+    }
+
+    return trim($value);
+}
+
 /**
  * 统一 PDO 数据库连接文件
  */
@@ -16,11 +26,11 @@ function db(): PDO
         return $pdo;
     }
 
-    $host = getenv('DB_HOST') ?: '127.0.0.1';
-    $port = getenv('DB_PORT') ?: '3306';
-    $name = getenv('DB_NAME') ?: 'wbsform';
-    $user = getenv('DB_USER') ?: 'wbsform';
-    $pass = getenv('DB_PASS') ?: 'pFhTNJBhcjj2bSrG';
+    $host = env_required('DB_HOST');
+    $port = env_required('DB_PORT');
+    $name = env_required('DB_NAME');
+    $user = env_required('DB_USER');
+    $pass = env_required('DB_PASS');
 
     $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $name);
 

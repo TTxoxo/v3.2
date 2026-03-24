@@ -3,6 +3,7 @@
 ## Official public submit endpoint
 - **Official endpoint:** `POST /api/submit.php`
 - Legacy `POST /api/inquiry_submit.php` is now explicitly deprecated and returns `410 Gone`.
+- CORS preflight (`OPTIONS`) now returns complete CORS headers for cross-origin embed requests.
 
 ## High-level flow
 1. Method / payload guard (`POST`, JSON parse, payload-size limit).
@@ -28,6 +29,14 @@
 ### 1) API key and site
 - Reads `X-API-KEY` first, then JSON `api_key` fallback.
 - Rejects missing/invalid key (`422` / `401`).
+
+### 0) CORS preflight
+- `OPTIONS` requests return:
+  - `Access-Control-Allow-Origin`
+  - `Vary: Origin`
+  - `Access-Control-Allow-Methods`
+  - `Access-Control-Allow-Headers`
+- Strict origin/site/api_key checks remain enforced on actual `POST` request processing.
 
 ### 2) Origin/domain matching
 - Extracts host from `Origin`, fallback `Referer`.
