@@ -1,6 +1,44 @@
 <?php
 declare(strict_types=1);
 
+
+if (!function_exists('admin_timezone')) {
+    function admin_timezone(): DateTimeZone
+    {
+        static $tz = null;
+        if ($tz instanceof DateTimeZone) {
+            return $tz;
+        }
+
+        $tz = new DateTimeZone('Asia/Shanghai');
+        date_default_timezone_set('Asia/Shanghai');
+        return $tz;
+    }
+}
+
+if (!function_exists('admin_format_datetime')) {
+    function admin_format_datetime(?string $value, string $format = 'Y-m-d H:i:s'): string
+    {
+        if ($value === null || trim($value) === '') {
+            return '';
+        }
+
+        try {
+            $dt = new DateTimeImmutable($value);
+            return $dt->setTimezone(admin_timezone())->format($format);
+        } catch (Throwable $e) {
+            return $value;
+        }
+    }
+}
+
+if (!function_exists('admin_now_filename')) {
+    function admin_now_filename(string $format = 'Ymd_His'): string
+    {
+        return (new DateTimeImmutable('now', admin_timezone()))->format($format);
+    }
+}
+
 if (!function_exists('admin_nav_items')) {
     function admin_nav_items(): array
     {

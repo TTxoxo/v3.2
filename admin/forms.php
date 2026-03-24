@@ -99,7 +99,7 @@ $forms = $listStmt->fetchAll();
                         enable_enhanced_conversion: <?= (int) $form['enable_enhanced_conversion'] ?><br>
                         require_gclid: <?= (int) $form['require_gclid'] ?>
                     </td>
-                    <td><?= htmlspecialchars((string) $form['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars(admin_format_datetime((string) $form['created_at']), ENT_QUOTES, 'UTF-8') ?></td>
                     <td>
                         <a class="btn btn-edit" href="/admin/form_edit.php?id=<?= (int) $form['id'] ?>">编辑</a>
                         <form method="post" action="" style="display:inline" onsubmit="return confirm('确认删除该表单？');">

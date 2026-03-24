@@ -65,5 +65,5 @@ header('Content-Type: application/json; charset=utf-8');
 echo json_encode([
     'success' => true,
     'message' => 'Foreign Trade Inquiry Manager API',
-    'routes' => ['/health', '/api/inquiry_submit.php'],
+    'routes' => ['/health', '/api/get_form.php', '/api/submit.php'],
 ], JSON_UNESCAPED_UNICODE);

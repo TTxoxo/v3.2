@@ -98,7 +98,7 @@ $sites = $listStmt->fetchAll();
                     <td><?= htmlspecialchars((string) $site['domain'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><code><?= htmlspecialchars((string) $site['api_key'], ENT_QUOTES, 'UTF-8') ?></code></td>
                     <td><textarea readonly><?= htmlspecialchars($embed, ENT_QUOTES, 'UTF-8') ?></textarea></td>
-                    <td><?= htmlspecialchars((string) $site['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars(admin_format_datetime((string) $site['created_at']), ENT_QUOTES, 'UTF-8') ?></td>
                     <td>
                         <a class="btn btn-edit" href="/admin/site_edit.php?id=<?= (int) $site['id'] ?>">编辑</a>
                         <form method="post" action="" style="display:inline" onsubmit="return confirm('确认删除该站点？');">

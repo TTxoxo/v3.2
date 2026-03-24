@@ -5,6 +5,7 @@ session_start();
 
 require __DIR__ . '/../config/database.php';
 require __DIR__ . '/_ui.php';
+require __DIR__ . '/_fields.php';
 
 if (empty($_SESSION['admin_user_id'])) {
     header('Location: /admin/login.php');
@@ -28,16 +29,12 @@ $sites = $siteStmt->fetchAll();
 $stmt = db()->prepare('SELECT * FROM forms WHERE id = :id LIMIT 1');
 $stmt->execute([':id' => $formId]);
 $form = $stmt->fetch();
-
 if (!$form) {
     header('Location: /admin/forms.php');
     exit;
 }
 
-$fields = json_decode((string) $form['fields_json'], true);
-if (!is_array($fields)) {
-    $fields = [];
-}
+$fields = admin_load_form_fields((int) $form['id'], (string) ($form['fields_json'] ?? '[]'));
 
 $tracking = [
     'ga4_measurement_id' => '',
@@ -64,36 +61,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formName = trim((string) ($_POST['form_name'] ?? ''));
         $siteId = (int) ($_POST['site_id'] ?? 0);
 
-        $fieldLabels = $_POST['field_label'] ?? [];
-        $fieldTypes = $_POST['field_type'] ?? [];
-        $fieldRequired = $_POST['field_required'] ?? [];
+        $postedKeys = $_POST['field_key'] ?? [];
+        $postedLabels = $_POST['field_label'] ?? [];
+        $postedTypes = $_POST['field_type'] ?? [];
+        $postedRequired = $_POST['field_required'] ?? [];
+        $postedEnabled = $_POST['field_enabled'] ?? [];
+        $postedPlaceholder = $_POST['field_placeholder'] ?? [];
+        $postedOptions = $_POST['field_options'] ?? [];
+        $postedWidth = $_POST['field_width'] ?? [];
+        $postedSort = $_POST['field_sort'] ?? [];
 
-        $updatedFields = [];
-        foreach ($fieldLabels as $i => $label) {
-            $label = trim((string) $label);
-            $type = (string) ($fieldTypes[$i] ?? 'text');
-
-            if ($label === '') {
-                continue;
-            }
-            if (!in_array($type, ['text', 'email', 'phone', 'textarea'], true)) {
-                continue;
-            }
-
-            $updatedFields[] = [
-                'label' => $label,
-                'name' => 'field_' . ($i + 1),
-                'type' => $type,
-                'required' => isset($fieldRequired[$i]),
-                'sort' => $i + 1,
+        $rows = [];
+        foreach ($postedKeys as $i => $k) {
+            $rows[] = [
+                'key' => (string) $k,
+                'label' => (string) ($postedLabels[$i] ?? ''),
+                'type' => (string) ($postedTypes[$i] ?? 'text'),
+                'required' => isset($postedRequired[$i]),
+                'enabled' => isset($postedEnabled[$i]),
+                'placeholder' => (string) ($postedPlaceholder[$i] ?? ''),
+                'options' => (string) ($postedOptions[$i] ?? ''),
+                'display_width' => (string) ($postedWidth[$i] ?? 'full'),
+                'sort_order' => (int) ($postedSort[$i] ?? (($i + 1) * 10)),
             ];
         }
 
         if ($formName === '' || $siteId <= 0) {
             $error = '请填写表单名称并选择所属站点。';
-        } elseif (!$updatedFields) {
-            $error = '请至少保留一个有效字段。';
         } else {
+            $legacyFields = admin_save_form_fields($formId, $rows);
+
             $up = db()->prepare('UPDATE forms
                                  SET site_id = :site_id,
                                      form_name = :form_name,
@@ -106,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $up->execute([
                 ':site_id' => $siteId,
                 ':form_name' => $formName,
-                ':fields_json' => json_encode($updatedFields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ':fields_json' => json_encode($legacyFields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ':enable_ga4' => isset($_POST['enable_ga4']) ? 1 : 0,
                 ':enable_ads' => isset($_POST['enable_ads']) ? 1 : 0,
                 ':enable_enhanced_conversion' => isset($_POST['enable_enhanced_conversion']) ? 1 : 0,
@@ -148,18 +145,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $tracking['ga4_measurement_id'] = trim((string) ($_POST['ga4_measurement_id'] ?? ''));
-        $tracking['ga4_api_secret'] = trim((string) ($_POST['ga4_api_secret'] ?? ''));
-        $tracking['ads_conversion_id'] = trim((string) ($_POST['ads_conversion_id'] ?? ''));
-        $tracking['ads_conversion_label'] = trim((string) ($_POST['ads_conversion_label'] ?? ''));
-        $tracking['smtp_to_email'] = trim((string) ($_POST['smtp_to_email'] ?? ''));
+        $fields = admin_load_form_fields((int) $form['id'], json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]');
     }
 }
-?>
 
-<?php admin_ui_start('编辑表单', 'forms'); ?>
+admin_ui_start('编辑表单', 'forms');
+?>
 <style>
-.wrap{max-width:980px;margin:0 auto}.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px}.row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px}.field{margin-bottom:12px}.field label{font-size:13px;color:#374151;display:block;margin-bottom:6px}input,select,button{padding:10px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box}input[type="text"],select{width:100%}.btn{background:#2563eb;color:#fff;border:0;cursor:pointer}.btn-secondary{background:#6b7280;color:#fff;text-decoration:none;padding:10px 12px;border-radius:8px;display:inline-block}.err{background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;margin-bottom:12px}.opt{margin-top:12px}.opt label{margin-right:12px}.actions{margin-top:12px;display:flex;gap:10px;align-items:center}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.full{grid-column:1 / 3}@media (max-width:900px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+.wrap{max-width:1180px;margin:0 auto}.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px}
+.field{margin-bottom:12px}.field label{font-size:13px;color:#374151;display:block;margin-bottom:6px}
+input,select,button,textarea{padding:8px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box;font-size:13px}
+input[type="text"],select,textarea{width:100%}.btn{background:#2563eb;color:#fff;border:0;cursor:pointer}
+.btn-secondary{background:#6b7280;color:#fff;text-decoration:none;padding:10px 12px;border-radius:8px;display:inline-block}
+.err{background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;margin-bottom:12px}
+.actions{margin-top:12px;display:flex;gap:10px;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.full{grid-column:1 / 3}
+.table-fields{width:100%;border-collapse:collapse;margin-top:8px}.table-fields th,.table-fields td{border:1px solid #e5e7eb;padding:8px;vertical-align:top}
+.badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:12px}.badge-builtin{background:#e0e7ff;color:#3730a3}.row-actions{display:flex;gap:6px}
+@media (max-width:980px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
 </style>
 <div class="wrap">
   <div class="card">
@@ -186,41 +189,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </select>
       </div>
 
-      <h3>字段配置（支持排序）</h3>
-      <div id="fields-wrap">
-        <?php if (!$fields): ?>
-          <div class="row field-item">
-            <input type="text" name="field_label[]" placeholder="字段名称（如 Name）" required>
-            <select name="field_type[]">
-              <option value="text">text</option>
-              <option value="email">email</option>
-              <option value="phone">phone</option>
-              <option value="textarea">textarea</option>
-            </select>
-            <label><input type="checkbox" name="field_required[0]" value="1">必填</label>
-            <button type="button" onclick="removeField(this)">删除</button>
-          </div>
-        <?php else: ?>
-          <?php foreach ($fields as $i => $field): ?>
-            <div class="row field-item">
-              <input type="text" name="field_label[]" value="<?= htmlspecialchars((string) ($field['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required>
-              <select name="field_type[]">
-                <?php $type = (string) ($field['type'] ?? 'text'); ?>
-                <option value="text" <?= $type === 'text' ? 'selected' : '' ?>>text</option>
-                <option value="email" <?= $type === 'email' ? 'selected' : '' ?>>email</option>
-                <option value="phone" <?= $type === 'phone' ? 'selected' : '' ?>>phone</option>
-                <option value="textarea" <?= $type === 'textarea' ? 'selected' : '' ?>>textarea</option>
+      <h3>字段配置（内置字段不可删除）</h3>
+      <table class="table-fields" id="fields-table">
+        <thead>
+        <tr>
+          <th>Key</th><th>标签</th><th>类型</th><th>必填</th><th>启用</th><th>占位符</th><th>选项</th><th>宽度</th><th>排序</th><th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="fields-body">
+        <?php foreach ($fields as $i => $f): ?>
+          <?php $isBuiltin = !empty($f['is_builtin']); ?>
+          <tr class="field-row" data-builtin="<?= $isBuiltin ? '1' : '0' ?>">
+            <td>
+              <input type="text" name="field_key[]" value="<?= htmlspecialchars((string) $f['key'], ENT_QUOTES, 'UTF-8') ?>" <?= $isBuiltin ? 'readonly' : '' ?> required>
+              <?php if ($isBuiltin): ?><span class="badge badge-builtin">builtin</span><?php endif; ?>
+            </td>
+            <td><input type="text" name="field_label[]" value="<?= htmlspecialchars((string) $f['label'], ENT_QUOTES, 'UTF-8') ?>" required></td>
+            <td>
+              <?php $type = (string) ($f['type'] ?? 'text'); ?>
+              <select name="field_type[]" <?= $isBuiltin ? 'disabled' : '' ?>>
+                <?php foreach (['text','email','phone','textarea','select'] as $t): ?>
+                  <option value="<?= $t ?>" <?= $type === $t ? 'selected' : '' ?>><?= $t ?></option>
+                <?php endforeach; ?>
               </select>
-              <label><input type="checkbox" name="field_required[<?= (int) $i ?>]" value="1" <?= !empty($field['required']) ? 'checked' : '' ?>>必填</label>
-              <button type="button" onclick="removeField(this)">删除</button>
-            </div>
-          <?php endforeach; ?>
-        <?php endif; ?>
-      </div>
+              <?php if ($isBuiltin): ?><input type="hidden" name="field_type[]" value="<?= htmlspecialchars($type, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
+            </td>
+            <td style="text-align:center"><input type="checkbox" name="field_required[<?= $i ?>]" value="1" <?= !empty($f['required']) ? 'checked' : '' ?>></td>
+            <td style="text-align:center"><input type="checkbox" name="field_enabled[<?= $i ?>]" value="1" <?= !empty($f['enabled']) ? 'checked' : '' ?> <?= $isBuiltin ? 'checked disabled' : '' ?>></td>
+            <td><input type="text" name="field_placeholder[]" value="<?= htmlspecialchars((string) ($f['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></td>
+            <td><textarea name="field_options[]" rows="2" placeholder="select 类型可填，逗号分隔"><?= htmlspecialchars((string) ($f['options'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></td>
+            <td>
+              <?php $w = (string) ($f['display_width'] ?? 'full'); ?>
+              <select name="field_width[]">
+                <option value="full" <?= $w === 'full' ? 'selected' : '' ?>>full</option>
+                <option value="half" <?= $w === 'half' ? 'selected' : '' ?>>half</option>
+              </select>
+            </td>
+            <td><input type="number" name="field_sort[]" value="<?= (int) ($f['sort_order'] ?? (($i + 1) * 10)) ?>"></td>
+            <td>
+              <?php if (!$isBuiltin): ?>
+                <button type="button" onclick="removeFieldRow(this)">删除</button>
+              <?php else: ?>
+                <span style="color:#6b7280">不可删除</span>
+              <?php endif; ?>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+      <p><button class="btn" type="button" onclick="addCustomFieldRow()">+ 添加自定义字段</button></p>
 
-      <p><button class="btn" type="button" onclick="addField()">+ 添加字段</button></p>
-
-      <div class="opt">
+      <div class="field">
+        <label>转化开关</label>
         <label><input type="checkbox" name="enable_ga4" value="1" <?= (int) $form['enable_ga4'] === 1 ? 'checked' : '' ?>> enable_ga4</label>
         <label><input type="checkbox" name="enable_ads" value="1" <?= (int) $form['enable_ads'] === 1 ? 'checked' : '' ?>> enable_ads</label>
         <label><input type="checkbox" name="enable_enhanced_conversion" value="1" <?= (int) $form['enable_enhanced_conversion'] === 1 ? 'checked' : '' ?>> enable_enhanced_conversion</label>
@@ -233,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div><label>GA4 API Secret</label><input type="text" name="ga4_api_secret" value="<?= htmlspecialchars((string) $tracking['ga4_api_secret'], ENT_QUOTES, 'UTF-8') ?>"></div>
         <div><label>Ads Conversion ID</label><input type="text" name="ads_conversion_id" value="<?= htmlspecialchars((string) $tracking['ads_conversion_id'], ENT_QUOTES, 'UTF-8') ?>"></div>
         <div><label>Ads Conversion Label</label><input type="text" name="ads_conversion_label" value="<?= htmlspecialchars((string) $tracking['ads_conversion_label'], ENT_QUOTES, 'UTF-8') ?>"></div>
-        <div class="full"><label>该站点收件邮箱（用于邮件通知）</label><input type="text" name="smtp_to_email" placeholder="a@company.com, b@company.com 或换行分隔" value="<?= htmlspecialchars((string) $tracking['smtp_to_email'], ENT_QUOTES, 'UTF-8') ?>"></div>
+        <div class="full"><label>该站点收件邮箱（用于邮件通知）</label><input type="text" name="smtp_to_email" value="<?= htmlspecialchars((string) $tracking['smtp_to_email'], ENT_QUOTES, 'UTF-8') ?>"></div>
       </div>
 
       <div class="actions">
@@ -245,28 +265,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-function addField() {
-  var wrap = document.getElementById('fields-wrap');
-  var index = wrap.querySelectorAll('.field-item').length;
-  var row = document.createElement('div');
-  row.className = 'row field-item';
-  row.innerHTML = '' +
-    '<input type="text" name="field_label[]" placeholder="字段名称" required>' +
-    '<select name="field_type[]">' +
-      '<option value="text">text</option>' +
-      '<option value="email">email</option>' +
-      '<option value="phone">phone</option>' +
-      '<option value="textarea">textarea</option>' +
-    '</select>' +
-    '<label><input type="checkbox" name="field_required[' + index + ']" value="1">必填</label>' +
-    '<button type="button" onclick="removeField(this)">删除</button>';
-  wrap.appendChild(row);
+function removeFieldRow(btn) {
+  var row = btn.closest('tr');
+  if (row && row.getAttribute('data-builtin') !== '1') {
+    row.remove();
+  }
 }
 
-function removeField(btn) {
-  var row = btn.closest('.field-item');
-  if (!row) return;
-  row.remove();
+function addCustomFieldRow() {
+  var tbody = document.getElementById('fields-body');
+  var idx = tbody.querySelectorAll('tr').length;
+  var tr = document.createElement('tr');
+  tr.className = 'field-row';
+  tr.setAttribute('data-builtin', '0');
+  tr.innerHTML = '' +
+    '<td><input type="text" name="field_key[]" placeholder="custom_key_' + idx + '" required></td>' +
+    '<td><input type="text" name="field_label[]" placeholder="字段名称" required></td>' +
+    '<td><select name="field_type[]"><option value="text">text</option><option value="email">email</option><option value="phone">phone</option><option value="textarea">textarea</option><option value="select">select</option></select></td>' +
+    '<td style="text-align:center"><input type="checkbox" name="field_required[' + idx + ']" value="1"></td>' +
+    '<td style="text-align:center"><input type="checkbox" name="field_enabled[' + idx + ']" value="1" checked></td>' +
+    '<td><input type="text" name="field_placeholder[]"></td>' +
+    '<td><textarea name="field_options[]" rows="2"></textarea></td>' +
+    '<td><select name="field_width[]"><option value="full">full</option><option value="half">half</option></select></td>' +
+    '<td><input type="number" name="field_sort[]" value="' + ((idx + 1) * 10) + '"></td>' +
+    '<td><button type="button" onclick="removeFieldRow(this)">删除</button></td>';
+  tbody.appendChild(tr);
 }
 </script>
 <?php admin_ui_end(); ?>

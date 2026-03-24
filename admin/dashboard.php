@@ -23,7 +23,7 @@ if (!$admin) {
 <?php admin_ui_start('控制台', 'dashboard'); ?>
 <div class="panel" style="margin-bottom:12px">
     <div style="font-size:20px;font-weight:700">欢迎，<?= htmlspecialchars((string)$admin['username'], ENT_QUOTES, 'UTF-8') ?></div>
-    <div style="font-size:12px;color:#64748b">管理员ID：<?= (int)$admin['id'] ?> ｜ 创建时间：<?= htmlspecialchars((string)$admin['created_at'], ENT_QUOTES, 'UTF-8') ?></div>
+    <div style="font-size:12px;color:#64748b">管理员ID：<?= (int)$admin['id'] ?> ｜ 创建时间：<?= htmlspecialchars(admin_format_datetime((string)$admin['created_at']), ENT_QUOTES, 'UTF-8') ?></div>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
