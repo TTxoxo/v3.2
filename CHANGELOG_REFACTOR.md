@@ -247,3 +247,29 @@
 - Added additive migration `database/migrations/20260325_004_submit_rate_limit_index.sql`.
 - New composite index: `idx_inquiries_site_ip_created` on `inquiries(site_id, user_ip, created_at)`.
 - Index shape aligns with submit anti-abuse query in `api/submit.php` (site + ip + recent time window).
+
+## 2026-03-25 - Backend admin UI consistency and visual cleanup round
+
+### Centralized admin style foundation
+- Added shared stylesheet: `admin/assets/admin.css`.
+- Moved common backend visual tokens and components into centralized classes:
+  - sidebar / topbar shell styles
+  - panel/card styles
+  - unified button variants (`btn-primary`, `btn-secondary`, `btn-danger`, `btn-success`)
+  - form controls (`form-label`, `form-control`, checkbox group)
+  - table/list styles (`table`, `table-wrap`, `table-fields`)
+  - message/status styles (`msg` + badge variants)
+
+### Shared shell cleanup
+- `admin/_ui.php` now loads `/admin/assets/admin.css` and uses consistent nav icon alignment class.
+- Removed large inline shell CSS block from `_ui.php` to reduce style duplication.
+
+### Page-level consistency improvements
+- Unified list pages (`forms.php`, `sites.php`, `inquiries.php`) around common page head, table, button, and message styles.
+- Unified create/edit form pages (`form_create.php`, `form_edit.php`) with shared form/table/button primitives and reduced page-local style blocks.
+- Improved inquiry detail readability (`inquiry_view.php`) by grouping into sections:
+  - 基础信息
+  - 自定义字段
+  - 来源与追踪
+  - 集成与日志状态
+- Applied small login visual consistency tweak to consume shared brand color tokens.

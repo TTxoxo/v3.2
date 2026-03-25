@@ -192,54 +192,50 @@ $queryBase = [
 
 admin_ui_start('询盘管理', 'inquiries');
 ?>
-<style>
-.container{max-width:1260px;margin:0 auto}.filters{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;background:#f9fafb;padding:12px;border-radius:10px}
-.filters .item{display:flex;flex-direction:column;font-size:13px;color:#374151}select,input,button,a.btn{padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px}
-button{background:#2563eb;color:#fff;border:none;cursor:pointer}button.danger{background:#dc2626}a.btn{display:inline-block;background:#059669;color:#fff;border:none;text-decoration:none}
-.badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:12px}.ok{background:#dcfce7;color:#166534}.fail{background:#fee2e2;color:#991b1b}.pending{background:#fef3c7;color:#92400e}
-.flash{margin:10px 0;padding:10px 12px;border-radius:8px}.flash.ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}.flash.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}.actions{display:flex;gap:8px;align-items:center}
-</style>
 <div class="container">
-    <?php if ($flashMessage !== ''): ?><div class="flash ok"><?= htmlspecialchars($flashMessage, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-    <?php if ($flashError !== ''): ?><div class="flash err"><?= htmlspecialchars($flashError, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+    <div class="page-head"><h2 class="page-title">询盘列表</h2></div>
+    <?php if ($flashMessage !== ''): ?><div class="msg ok"><?= htmlspecialchars($flashMessage, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+    <?php if ($flashError !== ''): ?><div class="msg err"><?= htmlspecialchars($flashError, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
     <form method="get" class="filters">
-        <div class="item"><label>站点</label><select name="site_id"><option value="">全部站点</option><?php foreach ($sites as $site): ?><option value="<?= (int) $site['id'] ?>" <?= $siteId === (int) $site['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string) $site['site_name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></div>
-        <div class="item"><label>开始日期</label><input type="date" name="date_from" value="<?= htmlspecialchars($dateFrom, ENT_QUOTES, 'UTF-8') ?>"></div>
-        <div class="item"><label>结束日期</label><input type="date" name="date_to" value="<?= htmlspecialchars($dateTo, ENT_QUOTES, 'UTF-8') ?>"></div>
-        <div class="item"><label>来源渠道</label><select name="source_channel"><option value="">全部渠道</option><?php foreach ($sourceChannels as $ch): ?><option value="<?= htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') ?>" <?= $sourceChannel === $ch ? 'selected' : '' ?>><?= htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></div>
-        <div class="item"><label>来源关键词</label><input type="text" name="source_keyword" value="<?= htmlspecialchars($sourceKeyword, ENT_QUOTES, 'UTF-8') ?>"></div>
-        <div class="item"><button type="submit">筛选</button></div>
-        <div class="item"><?php $csvQuery = $queryBase; $csvQuery['export'] = 'csv'; ?><a class="btn" href="?<?= htmlspecialchars(http_build_query(array_filter($csvQuery, static fn($v) => $v !== '')), ENT_QUOTES, 'UTF-8') ?>">导出 CSV</a></div>
+        <div class="item"><label>站点</label><select class="form-control" name="site_id"><option value="">全部站点</option><?php foreach ($sites as $site): ?><option value="<?= (int) $site['id'] ?>" <?= $siteId === (int) $site['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string) $site['site_name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></div>
+        <div class="item"><label>开始日期</label><input class="form-control" type="date" name="date_from" value="<?= htmlspecialchars($dateFrom, ENT_QUOTES, 'UTF-8') ?>"></div>
+        <div class="item"><label>结束日期</label><input class="form-control" type="date" name="date_to" value="<?= htmlspecialchars($dateTo, ENT_QUOTES, 'UTF-8') ?>"></div>
+        <div class="item"><label>来源渠道</label><select class="form-control" name="source_channel"><option value="">全部渠道</option><?php foreach ($sourceChannels as $ch): ?><option value="<?= htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') ?>" <?= $sourceChannel === $ch ? 'selected' : '' ?>><?= htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></div>
+        <div class="item"><label>来源关键词</label><input class="form-control" type="text" name="source_keyword" value="<?= htmlspecialchars($sourceKeyword, ENT_QUOTES, 'UTF-8') ?>"></div>
+        <div class="item"><button class="btn btn-primary" type="submit">筛选</button></div>
+        <div class="item"><?php $csvQuery = $queryBase; $csvQuery['export'] = 'csv'; ?><a class="btn btn-secondary" href="?<?= htmlspecialchars(http_build_query(array_filter($csvQuery, static fn($v) => $v !== '')), ENT_QUOTES, 'UTF-8') ?>">导出 CSV</a></div>
     </form>
 
-    <table>
+    <div class="panel table-wrap">
+    <table class="table">
         <thead><tr><th>ID</th><th>站点 / 表单</th><th>姓名/邮箱</th><th>电话</th><th>来源</th><th>增强转化状态</th><th>创建时间(上海)</th><th>操作</th></tr></thead>
         <tbody>
         <?php if (!$rows): ?>
             <tr><td colspan="8">暂无数据</td></tr>
         <?php else: ?>
             <?php foreach ($rows as $r): ?>
-                <?php $adsStatus = (string) ($r['ads_status'] ?? 'pending'); $cls = $adsStatus === 'success' ? 'ok' : ($adsStatus === 'failed' ? 'fail' : 'pending'); ?>
+                <?php $adsStatus = (string) ($r['ads_status'] ?? 'pending'); $cls = $adsStatus === 'success' ? 'badge-ok' : ($adsStatus === 'failed' ? 'badge-fail' : 'badge-pending'); ?>
                 <tr>
                     <td><?= (int) $r['id'] ?></td>
-                    <td><?= htmlspecialchars((string) $r['site_name'], ENT_QUOTES, 'UTF-8') ?><br><small><?= htmlspecialchars((string) $r['form_name'], ENT_QUOTES, 'UTF-8') ?></small></td>
-                    <td><?= htmlspecialchars((string) $r['name'], ENT_QUOTES, 'UTF-8') ?><br><small><?= htmlspecialchars((string) $r['email'], ENT_QUOTES, 'UTF-8') ?></small></td>
+                    <td><?= htmlspecialchars((string) $r['site_name'], ENT_QUOTES, 'UTF-8') ?><br><span class="text-muted"><?= htmlspecialchars((string) $r['form_name'], ENT_QUOTES, 'UTF-8') ?></span></td>
+                    <td><?= htmlspecialchars((string) $r['name'], ENT_QUOTES, 'UTF-8') ?><br><span class="text-muted"><?= htmlspecialchars((string) $r['email'], ENT_QUOTES, 'UTF-8') ?></span></td>
                     <td><?= htmlspecialchars((string) ($r['tel_value'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string) ($r['source_channel'] ?? 'unknown'), ENT_QUOTES, 'UTF-8') ?><br><small><?= htmlspecialchars((string) (($r['source_platform'] ?? '') !== '' ? $r['source_platform'] : ($r['utm_source'] ?? '')), ENT_QUOTES, 'UTF-8') ?><?= (($r['utm_medium'] ?? '') !== '' ? ' / ' . htmlspecialchars((string) $r['utm_medium'], ENT_QUOTES, 'UTF-8') : '') ?></small></td>
+                    <td><?= htmlspecialchars((string) ($r['source_channel'] ?? 'unknown'), ENT_QUOTES, 'UTF-8') ?><br><span class="text-muted"><?= htmlspecialchars((string) (($r['source_platform'] ?? '') !== '' ? $r['source_platform'] : ($r['utm_source'] ?? '')), ENT_QUOTES, 'UTF-8') ?><?= (($r['utm_medium'] ?? '') !== '' ? ' / ' . htmlspecialchars((string) $r['utm_medium'], ENT_QUOTES, 'UTF-8') : '') ?></span></td>
                     <td><span class="badge <?= $cls ?>"><?= htmlspecialchars($adsStatus, ENT_QUOTES, 'UTF-8') ?></span></td>
                     <td><?= htmlspecialchars(admin_format_datetime((string) $r['created_at']), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><div class="actions"><a href="/admin/inquiry_view.php?id=<?= (int) $r['id'] ?>">查看</a>
+                    <td><div class="actions"><a class="btn btn-secondary btn-sm" href="/admin/inquiry_view.php?id=<?= (int) $r['id'] ?>">查看</a>
                         <form method="post" onsubmit="return confirm('确认删除该询盘吗？此操作不可恢复。');" style="margin:0;display:inline">
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars((string) $_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="action" value="delete_inquiry"><input type="hidden" name="inquiry_id" value="<?= (int) $r['id'] ?>">
                             <input type="hidden" name="redirect_query" value="<?= htmlspecialchars(http_build_query(array_filter(array_merge($queryBase, ['page' => (string) $page]), static fn($v) => $v !== '')), ENT_QUOTES, 'UTF-8') ?>">
-                            <button type="submit" class="danger">删除</button>
+                            <button type="submit" class="btn btn-danger btn-sm">删除</button>
                         </form></div></td>
                 </tr>
             <?php endforeach; ?>
         <?php endif; ?>
         </tbody>
     </table>
+    </div>
 
     <div class="pager">
         <?php for ($i = 1; $i <= $totalPages; $i++): ?>

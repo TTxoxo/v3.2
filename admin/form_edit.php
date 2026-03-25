@@ -146,36 +146,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 admin_ui_start('编辑表单', 'forms');
 ?>
-<style>
-.wrap{max-width:1180px;margin:0 auto}.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px}
-.field{margin-bottom:12px}.field label{font-size:13px;color:#374151;display:block;margin-bottom:6px}
-input,select,button,textarea{padding:8px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box;font-size:13px}
-input[type="text"],select,textarea{width:100%}.btn{background:#2563eb;color:#fff;border:0;cursor:pointer}
-.btn-secondary{background:#6b7280;color:#fff;text-decoration:none;padding:10px 12px;border-radius:8px;display:inline-block}
-.err{background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;margin-bottom:12px}
-.actions{margin-top:12px;display:flex;gap:10px;align-items:center}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.full{grid-column:1 / 3}
-.table-fields{width:100%;border-collapse:collapse;margin-top:8px}.table-fields th,.table-fields td{border:1px solid #e5e7eb;padding:8px;vertical-align:top}
-.badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:12px}.badge-builtin{background:#e0e7ff;color:#3730a3}.row-actions{display:flex;gap:6px}
-@media (max-width:980px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
-</style>
-<div class="wrap">
-  <div class="card">
-    <h2 style="margin-top:0">编辑表单</h2>
-    <?php if ($error !== ''): ?><div class="err"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+<div class="container">
+  <div class="panel">
+    <h2 class="panel-title">编辑表单</h2>
+    <?php if ($error !== ''): ?><div class="msg err"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
     <form method="post" action="">
       <input type="hidden" name="id" value="<?= (int) $form['id'] ?>">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars((string) $_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
 
-      <div class="field">
-        <label>表单名称</label>
-        <input type="text" name="form_name" value="<?= htmlspecialchars((string) $form['form_name'], ENT_QUOTES, 'UTF-8') ?>" required>
+      <div class="form-group">
+        <label class="form-label">表单名称</label>
+        <input class="form-control" type="text" name="form_name" value="<?= htmlspecialchars((string) $form['form_name'], ENT_QUOTES, 'UTF-8') ?>" required>
       </div>
 
-      <div class="field">
-        <label>所属站点</label>
-        <select name="site_id" required>
+      <div class="form-group">
+        <label class="form-label">所属站点</label>
+        <select class="form-control" name="site_id" required>
           <?php foreach ($sites as $site): ?>
             <option value="<?= (int) $site['id'] ?>" <?= ((int) $site['id'] === (int) $form['site_id']) ? 'selected' : '' ?>>
               <?= htmlspecialchars((string) $site['site_name'], ENT_QUOTES, 'UTF-8') ?>
@@ -185,7 +172,8 @@ input[type="text"],select,textarea{width:100%}.btn{background:#2563eb;color:#fff
       </div>
 
       <h3>字段配置（内置字段不可删除）</h3>
-      <table class="table-fields" id="fields-table">
+      <div class="table-wrap">
+      <table class="table table-fields" id="fields-table">
         <thead>
         <tr>
           <th>Key</th><th>标签</th><th>类型</th><th>必填</th><th>启用</th><th>占位符</th><th>选项</th><th>宽度</th><th>排序</th><th>操作</th>
@@ -197,13 +185,13 @@ input[type="text"],select,textarea{width:100%}.btn{background:#2563eb;color:#fff
           <?php $rowId = 'row_' . $i . '_' . substr(md5((string) ($f['key'] ?? $i)), 0, 8); ?>
           <tr class="field-row" data-builtin="<?= $isBuiltin ? '1' : '0' ?>">
             <td>
-              <input type="text" name="fields[<?= $rowId ?>][key]" value="<?= htmlspecialchars((string) $f['key'], ENT_QUOTES, 'UTF-8') ?>" <?= $isBuiltin ? 'readonly' : '' ?> required>
+              <input class="form-control" type="text" name="fields[<?= $rowId ?>][key]" value="<?= htmlspecialchars((string) $f['key'], ENT_QUOTES, 'UTF-8') ?>" <?= $isBuiltin ? 'readonly' : '' ?> required>
               <?php if ($isBuiltin): ?><span class="badge badge-builtin">builtin</span><?php endif; ?>
             </td>
-            <td><input type="text" name="fields[<?= $rowId ?>][label]" value="<?= htmlspecialchars((string) $f['label'], ENT_QUOTES, 'UTF-8') ?>" required></td>
+            <td><input class="form-control" type="text" name="fields[<?= $rowId ?>][label]" value="<?= htmlspecialchars((string) $f['label'], ENT_QUOTES, 'UTF-8') ?>" required></td>
             <td>
               <?php $type = (string) ($f['type'] ?? 'text'); ?>
-              <select name="fields[<?= $rowId ?>][type]" <?= $isBuiltin ? 'disabled' : '' ?>>
+              <select class="form-control" name="fields[<?= $rowId ?>][type]" <?= $isBuiltin ? 'disabled' : '' ?>>
                 <?php foreach (['text','email','phone','textarea','select'] as $t): ?>
                   <option value="<?= $t ?>" <?= $type === $t ? 'selected' : '' ?>><?= $t ?></option>
                 <?php endforeach; ?>
@@ -215,49 +203,52 @@ input[type="text"],select,textarea{width:100%}.btn{background:#2563eb;color:#fff
               <?php if ($isBuiltin): ?><input type="hidden" name="fields[<?= $rowId ?>][enabled]" value="1"><?php endif; ?>
               <input type="checkbox" name="fields[<?= $rowId ?>][enabled]" value="1" <?= !empty($f['enabled']) ? 'checked' : '' ?> <?= $isBuiltin ? 'checked disabled' : '' ?>>
             </td>
-            <td><input type="text" name="fields[<?= $rowId ?>][placeholder]" value="<?= htmlspecialchars((string) ($f['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></td>
-            <td><textarea name="fields[<?= $rowId ?>][options]" rows="2" placeholder="select 类型可填，逗号分隔"><?= htmlspecialchars((string) ($f['options'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></td>
+            <td><input class="form-control" type="text" name="fields[<?= $rowId ?>][placeholder]" value="<?= htmlspecialchars((string) ($f['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></td>
+            <td><textarea class="form-control" name="fields[<?= $rowId ?>][options]" rows="2" placeholder="select 类型可填，逗号分隔"><?= htmlspecialchars((string) ($f['options'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></td>
             <td>
               <?php $w = (string) ($f['display_width'] ?? 'full'); ?>
-              <select name="fields[<?= $rowId ?>][display_width]">
+              <select class="form-control" name="fields[<?= $rowId ?>][display_width]">
                 <option value="full" <?= $w === 'full' ? 'selected' : '' ?>>full</option>
                 <option value="half" <?= $w === 'half' ? 'selected' : '' ?>>half</option>
               </select>
             </td>
-            <td><input type="number" name="fields[<?= $rowId ?>][sort_order]" value="<?= (int) ($f['sort_order'] ?? (($i + 1) * 10)) ?>"></td>
+            <td><input class="form-control" type="number" name="fields[<?= $rowId ?>][sort_order]" value="<?= (int) ($f['sort_order'] ?? (($i + 1) * 10)) ?>"></td>
             <td>
               <?php if (!$isBuiltin): ?>
-                <button type="button" onclick="removeFieldRow(this)">删除</button>
+                <button class="btn btn-danger btn-sm" type="button" onclick="removeFieldRow(this)">删除</button>
               <?php else: ?>
-                <span style="color:#6b7280">不可删除</span>
+                <span class="hint">不可删除</span>
               <?php endif; ?>
             </td>
           </tr>
         <?php endforeach; ?>
         </tbody>
       </table>
-      <p><button class="btn" type="button" onclick="addCustomFieldRow()">+ 添加自定义字段</button></p>
+      </div>
+      <p><button class="btn btn-secondary" type="button" onclick="addCustomFieldRow()">+ 添加自定义字段</button></p>
 
-      <div class="field">
-        <label>转化开关</label>
-        <label><input type="checkbox" name="enable_ga4" value="1" <?= (int) $form['enable_ga4'] === 1 ? 'checked' : '' ?>> enable_ga4</label>
-        <label><input type="checkbox" name="enable_ads" value="1" <?= (int) $form['enable_ads'] === 1 ? 'checked' : '' ?>> enable_ads</label>
-        <label><input type="checkbox" name="enable_enhanced_conversion" value="1" <?= (int) $form['enable_enhanced_conversion'] === 1 ? 'checked' : '' ?>> enable_enhanced_conversion</label>
-        <label><input type="checkbox" name="require_gclid" value="1" <?= (int) $form['require_gclid'] === 1 ? 'checked' : '' ?>> require_gclid</label>
+      <div class="form-group">
+        <label class="form-label">转化开关</label>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" name="enable_ga4" value="1" <?= (int) $form['enable_ga4'] === 1 ? 'checked' : '' ?>> enable_ga4</label>
+          <label class="checkbox-item"><input type="checkbox" name="enable_ads" value="1" <?= (int) $form['enable_ads'] === 1 ? 'checked' : '' ?>> enable_ads</label>
+          <label class="checkbox-item"><input type="checkbox" name="enable_enhanced_conversion" value="1" <?= (int) $form['enable_enhanced_conversion'] === 1 ? 'checked' : '' ?>> enable_enhanced_conversion</label>
+          <label class="checkbox-item"><input type="checkbox" name="require_gclid" value="1" <?= (int) $form['require_gclid'] === 1 ? 'checked' : '' ?>> require_gclid</label>
+        </div>
       </div>
 
-      <h3 style="margin-top:16px">站点跟踪配置（GA4 / Ads）</h3>
-      <div class="grid">
-        <div><label>GA4 Measurement ID</label><input type="text" name="ga4_measurement_id" value="<?= htmlspecialchars((string) $tracking['ga4_measurement_id'], ENT_QUOTES, 'UTF-8') ?>"></div>
-        <div><label>GA4 API Secret</label><input type="text" name="ga4_api_secret" value="<?= htmlspecialchars((string) $tracking['ga4_api_secret'], ENT_QUOTES, 'UTF-8') ?>"></div>
-        <div><label>Ads Conversion ID</label><input type="text" name="ads_conversion_id" value="<?= htmlspecialchars((string) $tracking['ads_conversion_id'], ENT_QUOTES, 'UTF-8') ?>"></div>
-        <div><label>Ads Conversion Label</label><input type="text" name="ads_conversion_label" value="<?= htmlspecialchars((string) $tracking['ads_conversion_label'], ENT_QUOTES, 'UTF-8') ?>"></div>
-        <div class="full"><label>该站点收件邮箱（用于邮件通知）</label><input type="text" name="smtp_to_email" value="<?= htmlspecialchars((string) $tracking['smtp_to_email'], ENT_QUOTES, 'UTF-8') ?>"></div>
+      <h3>站点跟踪配置（GA4 / Ads）</h3>
+      <div class="form-grid">
+        <div><label class="form-label">GA4 Measurement ID</label><input class="form-control" type="text" name="ga4_measurement_id" value="<?= htmlspecialchars((string) $tracking['ga4_measurement_id'], ENT_QUOTES, 'UTF-8') ?>"></div>
+        <div><label class="form-label">GA4 API Secret</label><input class="form-control" type="text" name="ga4_api_secret" value="<?= htmlspecialchars((string) $tracking['ga4_api_secret'], ENT_QUOTES, 'UTF-8') ?>"></div>
+        <div><label class="form-label">Ads Conversion ID</label><input class="form-control" type="text" name="ads_conversion_id" value="<?= htmlspecialchars((string) $tracking['ads_conversion_id'], ENT_QUOTES, 'UTF-8') ?>"></div>
+        <div><label class="form-label">Ads Conversion Label</label><input class="form-control" type="text" name="ads_conversion_label" value="<?= htmlspecialchars((string) $tracking['ads_conversion_label'], ENT_QUOTES, 'UTF-8') ?>"></div>
+        <div class="full"><label class="form-label">该站点收件邮箱（用于邮件通知）</label><input class="form-control" type="text" name="smtp_to_email" value="<?= htmlspecialchars((string) $tracking['smtp_to_email'], ENT_QUOTES, 'UTF-8') ?>"></div>
       </div>
 
       <div class="actions">
-        <button class="btn" type="submit">保存修改</button>
-        <a class="btn-secondary" href="/admin/forms.php">返回</a>
+        <button class="btn btn-primary" type="submit">保存修改</button>
+        <a class="btn btn-secondary" href="/admin/forms.php">返回</a>
       </div>
     </form>
   </div>
@@ -279,16 +270,16 @@ function addCustomFieldRow() {
   tr.className = 'field-row';
   tr.setAttribute('data-builtin', '0');
   tr.innerHTML = '' +
-    '<td><input type="text" name="fields[' + rowId + '][key]" placeholder="custom_key_' + idx + '" required></td>' +
-    '<td><input type="text" name="fields[' + rowId + '][label]" placeholder="字段名称" required></td>' +
-    '<td><select name="fields[' + rowId + '][type]"><option value="text">text</option><option value="email">email</option><option value="phone">phone</option><option value="textarea">textarea</option><option value="select">select</option></select></td>' +
+    '<td><input class="form-control" type="text" name="fields[' + rowId + '][key]" placeholder="custom_key_' + idx + '" required></td>' +
+    '<td><input class="form-control" type="text" name="fields[' + rowId + '][label]" placeholder="字段名称" required></td>' +
+    '<td><select class="form-control" name="fields[' + rowId + '][type]"><option value="text">text</option><option value="email">email</option><option value="phone">phone</option><option value="textarea">textarea</option><option value="select">select</option></select></td>' +
     '<td style="text-align:center"><input type="checkbox" name="fields[' + rowId + '][required]" value="1"></td>' +
     '<td style="text-align:center"><input type="checkbox" name="fields[' + rowId + '][enabled]" value="1" checked></td>' +
-    '<td><input type="text" name="fields[' + rowId + '][placeholder]"></td>' +
-    '<td><textarea name="fields[' + rowId + '][options]" rows="2"></textarea></td>' +
-    '<td><select name="fields[' + rowId + '][display_width]"><option value="full">full</option><option value="half">half</option></select></td>' +
-    '<td><input type="number" name="fields[' + rowId + '][sort_order]" value="' + ((idx + 1) * 10) + '"></td>' +
-    '<td><button type="button" onclick="removeFieldRow(this)">删除</button></td>';
+    '<td><input class="form-control" type="text" name="fields[' + rowId + '][placeholder]"></td>' +
+    '<td><textarea class="form-control" name="fields[' + rowId + '][options]" rows="2"></textarea></td>' +
+    '<td><select class="form-control" name="fields[' + rowId + '][display_width]"><option value="full">full</option><option value="half">half</option></select></td>' +
+    '<td><input class="form-control" type="number" name="fields[' + rowId + '][sort_order]" value="' + ((idx + 1) * 10) + '"></td>' +
+    '<td><button class="btn btn-danger btn-sm" type="button" onclick="removeFieldRow(this)">删除</button></td>';
   tbody.appendChild(tr);
 }
 </script>

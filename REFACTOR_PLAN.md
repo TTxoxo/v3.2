@@ -216,6 +216,21 @@ Low-risk, incremental, reversible changes only. Keep lightweight PHP architectur
 - On hot paths, query `form_fields` directly and only fallback to `fields_json` if query/table fails.
 - Add additive index migration for `inquiries(site_id, user_ip, created_at)` without destructive changes.
 
+## 2026-03-25 backend UI consistency plan (this round)
+
+### Scope boundary
+- UI polish and maintainability only.
+- No broad business-logic rewrite.
+- No submit-flow or schema redesign in this round.
+
+### Plan
+1. Centralize reusable backend styles into shared asset (`admin/assets/admin.css`).
+2. Keep `admin/_ui.php` as shell and reduce duplicated inline CSS.
+3. Unify list pages (`forms/sites/inquiries`) for tables, actions, flash messages, and spacing.
+4. Unify create/edit pages (`form_create/form_edit`) for form controls and field table style.
+5. Improve inquiry detail readability with section-based card grouping.
+6. Keep page-specific behavior/JS while only refactoring visual layers.
+
 ---
 
 ## Admin fields/timezone implementation status (this round)

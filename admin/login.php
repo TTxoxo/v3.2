@@ -157,6 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars($loginName, ENT_QUOTES, 'UTF-8') ?></title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css">
+<link rel="stylesheet" href="/admin/assets/admin.css">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:radial-gradient(circle at top,#e8f0ff 0%,#f8faff 46%,#f3f6fb 100%);font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;color:#111827}
@@ -167,8 +168,8 @@ h1{margin:0 0 4px;font-size:25px;font-weight:700;color:#0f172a}.sub{margin:0 0 2
 label{display:block;font-size:13px;color:#344054;margin:12px 0 6px;font-weight:600}
 input{width:100%;padding:11px 12px;border:1px solid #d4dbe7;border-radius:10px;outline:none}
 input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
-button{width:100%;margin-top:16px;padding:11px;border:0;border-radius:10px;background:#206bc4;color:#fff;font-weight:600;cursor:pointer}
-button:hover{background:#1a5aa8}
+button{width:100%;margin-top:16px;padding:11px;border:0;border-radius:10px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer}
+button:hover{background:var(--brand-dark)}
 .error{margin-top:12px;padding:10px;border-radius:10px;background:#fff1f2;color:#9f1239;font-size:13px;border:1px solid #fecdd3}
 .hint{margin-top:12px;color:#6b7280;font-size:12px}
 .system{margin-top:4px;color:#94a3b8;font-size:12px}

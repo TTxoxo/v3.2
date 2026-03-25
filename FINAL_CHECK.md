@@ -198,3 +198,20 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 
 4. **Compatibility tradeoff retained intentionally?**
    - Yes. `forms.fields_json` remains synchronized for legacy readers during migration window; primary authority is now `form_fields`.
+
+## 2026-03-25 follow-up verification (backend UI consistency round)
+
+1. **Shared backend style asset created and applied?**
+   - Yes. Added `admin/assets/admin.css` and wired it in `admin/_ui.php` as the shared admin style foundation.
+
+2. **Menu/topbar/buttons/forms/tables visually unified across target pages?**
+   - Yes. `forms.php`, `sites.php`, `inquiries.php`, `form_create.php`, `form_edit.php`, and `dashboard.php` now use common style primitives from shared CSS.
+
+3. **Inquiry detail readability improved with grouped sections?**
+   - Yes. `inquiry_view.php` now groups content into clear cards for builtin fields, custom fields, source/tracking, and integration/log states.
+
+4. **Page-local style duplication reduced?**
+   - Yes. Removed large inline shell/page style blocks in core admin pages where safe, while keeping minimal page-specific behavior scripts.
+
+5. **Functional regression introduced?**
+   - No functional-path changes were intentionally introduced; this round focused on presentation-layer consistency and class-level markup cleanup.
