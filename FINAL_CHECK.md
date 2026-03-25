@@ -215,3 +215,17 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 
 5. **Functional regression introduced?**
    - No functional-path changes were intentionally introduced; this round focused on presentation-layer consistency and class-level markup cleanup.
+
+## 2026-03-25 follow-up verification (embed duplicate-init safety round)
+
+1. **Duplicate init on same page controlled?**
+   - Yes. `embed/embed.js` now guards by same `api_key + mode + target` and returns early for repeated identical reinjection.
+
+2. **Duplicate global keydown listener accumulation avoided?**
+   - Yes. `Escape` listener is now bound once via shared global runtime state instead of one `document` listener per instance.
+
+3. **Duplicate host mounting reduced for SPA-like reinjection?**
+   - Yes. Per-instance host id plus existing-host checks now prevent repeated same-instance host creation.
+
+4. **Inline/floating behavior preserved?**
+   - Yes. Existing rendering, field mapping, submit flow, and UX paths are preserved; this round only adds lifecycle safety guards.

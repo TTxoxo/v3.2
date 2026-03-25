@@ -90,3 +90,16 @@ Sources:
 ## Known safe gap
 Some admin-side UI config fields (title/subtitle/button/theme/etc.) are not fully persisted in DB yet.
 Embed now supports them safely via query params and server-default merge without breaking existing behavior.
+
+## Duplicate-init and SPA-like reinjection safety
+- Added lightweight same-instance guard keyed by:
+  - `api_key`
+  - `display` mode (`inline` / `floating`)
+  - inline `target` selector (for inline mode)
+- Re-injecting the same embed script config on the same page now short-circuits instead of mounting a second host.
+- Host mount is now deterministic per instance (`#inquiry-embed-host-...`) to reduce accidental duplicate mounting.
+- Global `Escape` key handling is now bound once per page via shared runtime state, avoiding document-level keydown listener accumulation across repeated injections.
+
+### Intentional behavior boundary
+- Multi-instance support with **different** keys/targets remains available.
+- Same-key + same-mode + same-target duplicate reinjection is intentionally treated as no-op for stability.

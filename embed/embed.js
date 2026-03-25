@@ -36,6 +36,9 @@
 
   var displayMode = (getParam('display') || 'floating').toLowerCase(); // floating | inline
   var targetSelector = getParam('target') || '#inquiry-embed-inline';
+  if (displayMode !== 'inline' && displayMode !== 'floating') {
+    displayMode = 'floating';
+  }
 
   var UI_OVERRIDES = {
     title: getParam('title') || '',
@@ -62,6 +65,34 @@
 
   var ATTR_COOKIE_KEY = 'inquiry_attr_' + apiKey;
   var ATTR_COOKIE_DAYS = 30;
+
+  function normalizeInstanceToken(value) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, '_')
+      .slice(0, 80);
+  }
+
+  var instanceToken = normalizeInstanceToken(apiKey) + '_' + displayMode + '_' + normalizeInstanceToken(displayMode === 'inline' ? targetSelector : 'floating');
+  var hostId = 'inquiry-embed-host-' + instanceToken;
+  var instanceKey = apiKey + '|' + displayMode + '|' + (displayMode === 'inline' ? targetSelector : 'floating');
+  var registry = window.__INQUIRY_EMBED_INSTANCES__ = window.__INQUIRY_EMBED_INSTANCES__ || {};
+  var existingHost = document.getElementById(hostId);
+  if (registry[instanceKey] && existingHost && existingHost.isConnected) {
+    return;
+  }
+  if (registry[instanceKey] && (!existingHost || !existingHost.isConnected)) {
+    delete registry[instanceKey];
+  }
+  if (existingHost && existingHost.isConnected) {
+    return;
+  }
+  registry[instanceKey] = { hostId: hostId, createdAt: Date.now(), mode: displayMode };
+
+  var globalRuntime = window.__INQUIRY_EMBED_GLOBAL__ = window.__INQUIRY_EMBED_GLOBAL__ || {
+    escBound: false,
+    floatingPanels: {}
+  };
 
   function getCookie(name) {
     var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\/+^]/g, '\\$&') + '=([^;]*)'));
@@ -97,7 +128,7 @@
   }
 
   var host = document.createElement('div');
-  host.id = 'inquiry-embed-host';
+  host.id = hostId;
 
   var mountInline = null;
   if (displayMode === 'inline') {
@@ -210,11 +241,6 @@
       openPanel();
     });
 
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && panel.classList.contains('open')) {
-        closePanel();
-      }
-    });
   }
 
   shadow.appendChild(style);
@@ -387,6 +413,10 @@
     panel.classList.add('open');
     overlay.classList.add('open');
     toggle.setAttribute('aria-expanded', 'true');
+    globalRuntime.floatingPanels[instanceKey] = {
+      isOpen: function () { return panel.classList.contains('open'); },
+      close: closePanel
+    };
 
     if (!panel.querySelector('form')) {
       if (loadedFormConfig) {
@@ -661,6 +691,21 @@
   if (displayMode === 'inline') {
     loadFormAndRender();
   } else {
+    if (!globalRuntime.escBound) {
+      globalRuntime.escBound = true;
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        var keys = Object.keys(globalRuntime.floatingPanels);
+        for (var i = 0; i < keys.length; i++) {
+          var entry = globalRuntime.floatingPanels[keys[i]];
+          if (entry && typeof entry.isOpen === 'function' && entry.isOpen() && typeof entry.close === 'function') {
+            entry.close();
+            break;
+          }
+        }
+      });
+    }
+
     setLoading('Click button to open form');
     setTimeout(function () { fetchFormConfig().catch(function () {}); }, 1200);
   }

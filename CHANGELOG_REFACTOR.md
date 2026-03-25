@@ -273,3 +273,17 @@
   - 来源与追踪
   - 集成与日志状态
 - Applied small login visual consistency tweak to consume shared brand color tokens.
+
+## 2026-03-25 - Embed stability hardening (duplicate-init safety)
+
+### Duplicate initialization guards
+- `embed/embed.js` now uses a lightweight same-instance registry guard keyed by `api_key + mode + target` to short-circuit duplicate reinjection on the same page.
+- Added deterministic per-instance host id (`inquiry-embed-host-...`) and existing-host checks to reduce duplicate mounting risk during SPA-like repeated script injections.
+
+### Global listener accumulation control
+- Replaced per-instance document `keydown` Escape binding with a shared global runtime (`window.__INQUIRY_EMBED_GLOBAL__`) that binds once and closes currently open floating panel entries.
+- This prevents uncontrolled document-level keydown listener accumulation when embed script is injected repeatedly.
+
+### Compatibility/behavior
+- Inline and floating behavior/UX remain unchanged in normal single-init usage.
+- Submit payload contract and secure endpoint usage remain unchanged (`POST /api/submit.php` + `X-API-KEY`).
