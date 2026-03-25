@@ -287,3 +287,25 @@
 ### Compatibility/behavior
 - Inline and floating behavior/UX remain unchanged in normal single-init usage.
 - Submit payload contract and secure endpoint usage remain unchanged (`POST /api/submit.php` + `X-API-KEY`).
+
+## 2026-03-25 - Final validation and documentation alignment cleanup
+
+### Scope
+- Validation/consistency/cleanup only.
+- No broad redesign and no new feature rollout in this round.
+
+### Documentation alignment updates
+- `FINAL_CHECK.md` expanded with explicit 12-point closure checklist:
+  - create/edit field UX behavior
+  - transaction safety
+  - one-form-per-site validation
+  - composite index presence
+  - source-of-truth documentation
+  - backend UI consistency
+  - embed duplicate-init protection
+  - docs-to-code alignment
+- `RELEASE_NOTES.md` updated to include:
+  - migration `20260325_004_submit_rate_limit_index.sql`
+  - submit hot-path composite index details
+  - embed duplicate-init/listener safety notes
+  - final validation scope statement.

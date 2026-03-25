@@ -229,3 +229,30 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 
 4. **Inline/floating behavior preserved?**
    - Yes. Existing rendering, field mapping, submit flow, and UX paths are preserved; this round only adds lifecycle safety guards.
+
+## 2026-03-25 final validation checklist (requested closure)
+
+1. **Create page directly supports builtin + custom fields?** — PASS  
+   Evidence: `admin/form_create.php` renders builtin rows and supports add-custom-row JS with field settings inputs.
+2. **Builtin fields visible by default on create page?** — PASS  
+   Evidence: create flow initializes `admin_default_field_rows()` and renders builtin keys.
+3. **Builtin fields non-deletable?** — PASS  
+   Evidence: builtin rows are marked and delete action is disabled/blocked.
+4. **Custom fields creatable directly from create page?** — PASS  
+   Evidence: `addCustomFieldRow()` appends row inputs and save path persists through `admin_save_form_fields()`.
+5. **Edit page save correctness after delete/add operations?** — PASS  
+   Evidence: row-based `fields[row_id][...]` structure used in create/edit and parsed by shared collector.
+6. **Create/edit save flows transaction-safe?** — PASS  
+   Evidence: both create/edit pages wrap multi-entity writes in transactions with rollback.
+7. **One-form-per-site friendly validation in edit flow?** — PASS  
+   Evidence: pre-save conflict check on `forms.site_id` excluding current form id.
+8. **Composite DB index exists for submit rate-limit query?** — PASS  
+   Evidence: migration `20260325_004_submit_rate_limit_index.sql` adds `inquiries(site_id, user_ip, created_at)`.
+9. **Source-of-truth policy clearly documented?** — PASS  
+   Evidence: docs consistently mark `form_fields` primary and `fields_json` compatibility-only.
+10. **Backend UI more consistent?** — PASS  
+   Evidence: shared `admin/assets/admin.css` + reused page primitives in key admin pages.
+11. **Embed duplicate-init protection exists?** — PASS  
+   Evidence: same-instance guard + deterministic host id + shared Escape listener runtime.
+12. **Docs match real code?** — PASS (with compatibility caveats documented)  
+   Evidence: `CHANGELOG_REFACTOR.md`, `FRONTEND_EMBED_UI.md`, `RELEASE_NOTES.md`, and this file now align with implemented behavior.

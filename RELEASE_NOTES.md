@@ -14,6 +14,7 @@ This release finalizes a lightweight-PHP refactor for multi-site inquiry managem
   - `20260324_001_schema_additive.sql`
   - `20260324_002_data_backfill_and_form_convergence.sql`
   - `20260324_003_constraints_and_compatibility.sql`
+  - `20260325_004_submit_rate_limit_index.sql`
 - Added target tables:
   - `site_users`, `form_fields`, `inquiry_logs`, `login_attempts`, `forms_archive`
 - Added inquiry structure:
@@ -22,6 +23,8 @@ This release finalizes a lightweight-PHP refactor for multi-site inquiry managem
   - one-form-per-site (`uk_forms_site_id`)
   - one-site-user-per-site (`uk_site_users_site_id`)
 - Added compatibility sync triggers from `form_logs` to `inquiry_logs`.
+- Added submit hot-path composite index:
+  - `idx_inquiries_site_ip_created` on `inquiries(site_id, user_ip, created_at)`.
 
 ## 3) Submit/security changes
 - Official endpoint fixed to `POST /api/submit.php`.
@@ -52,6 +55,10 @@ This release finalizes a lightweight-PHP refactor for multi-site inquiry managem
 - Responsive behavior improved for desktop/mobile.
 - Floating mode supports subtle animation, close controls, and mobile bottom-sheet behavior.
 - Submit states improved: loading/success/error and duplicate-submit guard.
+- Duplicate-init safety hardening:
+  - same-instance reinjection guard (`api_key + mode + target`),
+  - deterministic host id checks to avoid duplicate mounting,
+  - single global Escape key listener runtime to avoid repeated document-level listener accumulation.
 
 ## 6) Migration cautions
 - Execute migrations sequentially.
@@ -80,3 +87,12 @@ Recommended staged rollout:
 - **Deprecated compatibility stub:** `embed/form.js`.
 - **Temporarily retained:** `forms.fields_json`, `form_logs` compatibility bridge.
 - **Schema ready but not fully productized:** `site_users` lifecycle (currently structural enforcement, not a full site-user portal workflow).
+
+## Final validation and cleanup status (2026-03-25)
+- Final round scope remained validation/consistency/cleanup only; no new business feature rollout.
+- Documentation now explicitly aligns with runtime behavior for:
+  - create/edit field-row handling,
+  - transaction-safe create/edit saves,
+  - one-form-per-site friendly edit validation,
+  - source-of-truth and compatibility posture,
+  - embed duplicate-init protection boundaries.
