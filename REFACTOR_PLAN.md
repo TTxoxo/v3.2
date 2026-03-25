@@ -158,6 +158,7 @@ Low-risk, incremental, reversible changes only. Keep lightweight PHP architectur
 1. `database/migrations/20260324_001_schema_additive.sql`
 2. `database/migrations/20260324_002_data_backfill_and_form_convergence.sql`
 3. `database/migrations/20260324_003_constraints_and_compatibility.sql`
+4. `database/migrations/20260325_004_submit_rate_limit_index.sql`
 
 ### What this sequence does
 - Adds target tables: `site_users`, `form_fields`, `inquiry_logs`, `login_attempts`.
@@ -202,6 +203,18 @@ Low-risk, incremental, reversible changes only. Keep lightweight PHP architectur
 ### Compatibility retained intentionally
 - `form_logs` write path retained for runtime stability.
 - `inquiry_logs` remains synced via DB trigger bridge until later code cutover.
+
+## 2026-03-25 incremental cleanup plan (this round)
+
+### Goals
+1. Move runtime reads/writes closer to `form_fields` as field-definition source of truth.
+2. Reduce hot-path dependence on `information_schema` table-existence checks.
+3. Add composite index matching submit rate-limit query shape.
+
+### Applied approach
+- Keep `forms.fields_json` only as compatibility bridge payload for old readers.
+- On hot paths, query `form_fields` directly and only fallback to `fields_json` if query/table fails.
+- Add additive index migration for `inquiries(site_id, user_ip, created_at)` without destructive changes.
 
 ---
 

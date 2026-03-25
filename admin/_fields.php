@@ -13,26 +13,6 @@ if (!function_exists('admin_builtin_field_specs')) {
     }
 }
 
-if (!function_exists('admin_form_fields_table_exists')) {
-    function admin_form_fields_table_exists(): bool
-    {
-        static $exists = null;
-        if (is_bool($exists)) {
-            return $exists;
-        }
-
-        try {
-            $stmt = db()->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table LIMIT 1');
-            $stmt->execute([':table' => 'form_fields']);
-            $exists = (bool) $stmt->fetchColumn();
-        } catch (Throwable $e) {
-            $exists = false;
-        }
-
-        return $exists;
-    }
-}
-
 if (!function_exists('admin_normalize_field_key')) {
     function admin_normalize_field_key(string $raw): string
     {
@@ -50,8 +30,7 @@ if (!function_exists('admin_load_form_fields')) {
     function admin_load_form_fields(int $formId, string $fieldsJson): array
     {
         $fields = [];
-
-        if (admin_form_fields_table_exists()) {
+        try {
             $stmt = db()->prepare('SELECT field_key, field_label, field_type, is_builtin, is_required, is_active, sort_order, settings_json
                                    FROM form_fields
                                    WHERE form_id = :form_id
@@ -77,6 +56,9 @@ if (!function_exists('admin_load_form_fields')) {
                     'display_width' => trim((string) ($settings['display_width'] ?? 'full')),
                 ];
             }
+        } catch (Throwable $e) {
+            // Compatibility fallback for old deployments before form_fields migration.
+            $fields = [];
         }
 
         if ($fields === []) {
@@ -208,7 +190,7 @@ if (!function_exists('admin_save_form_fields')) {
         $fields = array_values($sanitized);
         usort($fields, static fn(array $a, array $b): int => ((int) $a['sort_order']) <=> ((int) $b['sort_order']));
 
-        if (admin_form_fields_table_exists()) {
+        try {
             $del = db()->prepare('DELETE FROM form_fields WHERE form_id = :form_id');
             $del->execute([':form_id' => $formId]);
 
@@ -236,6 +218,8 @@ if (!function_exists('admin_save_form_fields')) {
                     ':settings_json' => $settingsJson,
                 ]);
             }
+        } catch (Throwable $e) {
+            // Compatibility fallback: keep forms.fields_json updated by caller.
         }
 
         $legacyFields = [];

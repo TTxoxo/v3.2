@@ -71,13 +71,6 @@ function site_host(string $domain): string
     return explode('/', (string) $normalized)[0] ?? '';
 }
 
-function table_exists(string $table): bool
-{
-    $stmt = db()->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table LIMIT 1');
-    $stmt->execute([':table' => $table]);
-    return (bool) $stmt->fetchColumn();
-}
-
 try {
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
         http_response_code(405);
@@ -131,7 +124,7 @@ try {
     }
 
     $fields = [];
-    if (table_exists('form_fields')) {
+    try {
         $fieldStmt = db()->prepare('SELECT field_key, field_label, field_type, is_required, sort_order
                                     FROM form_fields
                                     WHERE form_id = :form_id AND is_active = 1
@@ -150,6 +143,8 @@ try {
                 ];
             }
         }
+    } catch (Throwable $e) {
+        // Compatibility fallback for old deployments before form_fields exists.
     }
 
     if ($fields === []) {

@@ -235,3 +235,15 @@
 ### One-form-per-site friendly validation in edit flow
 - Added explicit business pre-check in `admin/form_edit.php` to detect existing form on target site before save.
 - Returns clear admin-facing error instead of relying on raw DB unique constraint failure.
+
+## 2026-03-25 - Source-of-truth tightening + submit hot-path index round
+
+### Source-of-truth policy tightening
+- `admin/_fields.php`, `api/get_form.php`, and `api/submit.php` now query `form_fields` directly first.
+- Removed hot-path `information_schema` table-existence checks from these runtime paths.
+- `forms.fields_json` remains as compatibility fallback/output bridge only (legacy readers), not preferred runtime source.
+
+### Submit hot-path DB improvement
+- Added additive migration `database/migrations/20260325_004_submit_rate_limit_index.sql`.
+- New composite index: `idx_inquiries_site_ip_created` on `inquiries(site_id, user_ip, created_at)`.
+- Index shape aligns with submit anti-abuse query in `api/submit.php` (site + ip + recent time window).

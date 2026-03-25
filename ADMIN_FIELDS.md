@@ -10,7 +10,7 @@ The admin now treats form fields with **explicit separation**:
   - `message`
 - **Custom fields** (admin-manageable): any non-builtin `field_key`.
 
-`form_fields` is the primary source of truth. `forms.fields_json` is still synchronized for backward compatibility.
+`form_fields` is the runtime source of truth. `forms.fields_json` is synchronized as compatibility-only output for legacy readers/tools.
 
 ## Builtin constraints
 Builtin fields are protected by admin logic:
@@ -37,8 +37,9 @@ Admin inquiry pages now display:
 - Custom field labels resolved from form field definitions (`form_fields` fallback to legacy `fields_json`).
 
 ## Backward compatibility
-- Reads prefer `form_fields` when available.
-- Legacy `fields_json` remains synchronized so old paths do not break immediately.
+- Runtime reads now directly query `form_fields` first on admin/API hot paths.
+- Legacy `fields_json` fallback is used only when `form_fields` cannot be read (e.g., pre-migration deployment).
+- `forms.fields_json` remains synchronized so old paths do not break immediately.
 - This keeps runtime stable while gradually completing full field-model cutover.
 
 ## Create page behavior

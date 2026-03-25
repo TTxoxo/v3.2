@@ -15,8 +15,8 @@
    - honeypot (`website`/`company_website`) must be empty
    - per-site+IP frequency check in recent 10 minutes
 6. Field definition load and validation:
-   - preferred source: `form_fields` (`is_active=1`)
-   - compatibility fallback: `forms.fields_json`
+   - source of truth: `form_fields` (`is_active=1`)
+   - compatibility fallback only: `forms.fields_json` when `form_fields` path is unavailable
    - builtin fixed fields always enforced: `name`, `tel`, `email`, `message`
 7. Builtin/custom mapping:
    - builtin -> dedicated columns
@@ -74,6 +74,8 @@
 - JSON body size limit (`50 KB`).
 - Honeypot field check (`website` / `company_website`).
 - Per-site+IP submission throttling (last 10 min count).
+- Composite index added for this hot path:
+  - `inquiries(site_id, user_ip, created_at)` via `idx_inquiries_site_ip_created`.
 
 ## Integration behavior and fault isolation
 - Inquiry insert is primary transaction step.
@@ -83,3 +85,4 @@
 ## Compatibility notes
 - `api/inquiry_submit.php` kept only as a hard deprecation stub (`410`) to avoid silent legacy acceptance.
 - `form_logs` remains in use for runtime compatibility; DB trigger keeps `inquiry_logs` synchronized until full code cutover.
+- `forms.fields_json` is compatibility-only in submit path; primary field-definition authority is `form_fields`.

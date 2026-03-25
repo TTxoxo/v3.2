@@ -103,16 +103,9 @@ function is_allowed_origin(string $originHostNorm, string $siteHostNorm): bool
         || str_ends_with($originHostNorm, '.' . $siteHostNorm);
 }
 
-function table_exists(string $table): bool
-{
-    $stmt = db()->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table LIMIT 1');
-    $stmt->execute([':table' => $table]);
-    return (bool) $stmt->fetchColumn();
-}
-
 function load_form_fields(int $formId, string $fieldsJson): array
 {
-    if (table_exists('form_fields')) {
+    try {
         $stmt = db()->prepare('SELECT field_key, field_label, field_type, is_builtin, is_required, sort_order
                                FROM form_fields
                                WHERE form_id = :form_id AND is_active = 1
@@ -131,6 +124,8 @@ function load_form_fields(int $formId, string $fieldsJson): array
                 ];
             }, $rows);
         }
+    } catch (Throwable $e) {
+        // Compatibility fallback for old deployments before form_fields exists.
     }
 
     $legacy = json_decode($fieldsJson, true);

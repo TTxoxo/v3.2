@@ -180,3 +180,21 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 
 4. **Friendly one-form-per-site validation in edit flow?**
    - Yes. Edit flow now checks for existing form on target site before save and returns business-readable error.
+
+## 2026-03-25 follow-up verification (source-of-truth tightening + hot-path checks)
+
+1. **Field-definition source of truth closer to `form_fields`?**
+   - Yes. Admin/API runtime paths now query `form_fields` directly first; `fields_json` is fallback-only compatibility.
+
+2. **Hot-path metadata checks reduced?**
+   - Yes. Removed runtime `information_schema` table-existence checks from:
+     - `admin/_fields.php`
+     - `api/get_form.php`
+     - `api/submit.php`
+
+3. **Submit rate-limit query index coverage complete?**
+   - Yes. Added migration `20260325_004_submit_rate_limit_index.sql` with composite index:
+     - `inquiries(site_id, user_ip, created_at)`
+
+4. **Compatibility tradeoff retained intentionally?**
+   - Yes. `forms.fields_json` remains synchronized for legacy readers during migration window; primary authority is now `form_fields`.
