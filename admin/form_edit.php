@@ -61,30 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formName = trim((string) ($_POST['form_name'] ?? ''));
         $siteId = (int) ($_POST['site_id'] ?? 0);
 
-        $postedKeys = $_POST['field_key'] ?? [];
-        $postedLabels = $_POST['field_label'] ?? [];
-        $postedTypes = $_POST['field_type'] ?? [];
-        $postedRequired = $_POST['field_required'] ?? [];
-        $postedEnabled = $_POST['field_enabled'] ?? [];
-        $postedPlaceholder = $_POST['field_placeholder'] ?? [];
-        $postedOptions = $_POST['field_options'] ?? [];
-        $postedWidth = $_POST['field_width'] ?? [];
-        $postedSort = $_POST['field_sort'] ?? [];
-
-        $rows = [];
-        foreach ($postedKeys as $i => $k) {
-            $rows[] = [
-                'key' => (string) $k,
-                'label' => (string) ($postedLabels[$i] ?? ''),
-                'type' => (string) ($postedTypes[$i] ?? 'text'),
-                'required' => isset($postedRequired[$i]),
-                'enabled' => isset($postedEnabled[$i]),
-                'placeholder' => (string) ($postedPlaceholder[$i] ?? ''),
-                'options' => (string) ($postedOptions[$i] ?? ''),
-                'display_width' => (string) ($postedWidth[$i] ?? 'full'),
-                'sort_order' => (int) ($postedSort[$i] ?? (($i + 1) * 10)),
-            ];
-        }
+        $rows = admin_collect_posted_field_rows($_POST);
 
         if ($formName === '' || $siteId <= 0) {
             $error = '请填写表单名称并选择所属站点。';

@@ -196,3 +196,19 @@
 
 ### Documentation semantics cleanup
 - Updated verification language to clearly mark `site_users` as **partially done** (schema-level complete, runtime productization deferred), avoiding “fully done” ambiguity.
+
+## 2026-03-25 - Create-page field product gap closure
+
+### Admin create form UX
+- `admin/form_create.php` now directly renders builtin system fields (`name`, `tel`, `email`, `message`) on create page.
+- Builtin rows are clearly marked and non-deletable.
+- Custom fields can be added directly during create flow (no longer edit-page-only setup).
+- Create page now supports field settings editing: label / required / enabled / placeholder / options / display width / sort order.
+
+### Coherent create persistence flow
+- Create submit now persists `forms`, `form_fields` (plus compatibility `fields_json` sync), and `site_settings` in one coherent user flow.
+- Added transaction handling in create flow to reduce partial-write risk from multi-entity persistence.
+
+### Shared field-post parsing
+- Added reusable helper in `admin/_fields.php` for collecting posted field rows.
+- `admin/form_edit.php` now reuses this helper to reduce duplicated field-post parsing logic.

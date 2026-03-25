@@ -18,9 +18,9 @@ No broad rewrite is done in this round.
 ## 1) Confirmation of requested findings (actual current state)
 
 ### A. create page still does not directly support builtin + custom field creation
-- **Status: CONFIRMED PRESENT**
+- **Status: FIXED IN CURRENT ROUND**
 - Evidence:
-  - create page only collects form-level metadata (`form_name`, `site_id`, feature toggles) and auto-generates builtin defaults. It explicitly says custom fields are maintained on edit page. (`admin/form_create.php`)
+  - create page now directly renders builtin rows, supports add custom field rows, and allows editing field settings before first save. (`admin/form_create.php`)
 
 ### B. edit page has field row index mismatch risk
 - **Status: CONFIRMED PRESENT (frontend naming risk still exists)**
@@ -32,10 +32,10 @@ No broad rewrite is done in this round.
   - when rows are deleted/reordered client-side, sparse/misaligned checkbox indexes can make intent less explicit and harder to reason about.
 
 ### C. create/edit flows are not transaction-safe
-- **Status: CONFIRMED PRESENT**
+- **Status: PARTIALLY FIXED (create improved, edit still pending)**
 - Evidence:
-  - create flow performs multiple writes without transaction boundary: insert form -> save form_fields -> update fields_json.
-  - edit flow performs multiple writes without transaction boundary: save form_fields -> update forms -> upsert site_settings.
+  - create flow now wraps multi-write persistence in transaction boundary.
+  - edit flow still performs multiple writes without transaction boundary: save form_fields -> update forms -> upsert site_settings.
   - helper `admin_save_form_fields()` does delete + reinsert pattern without outer transaction.
 
 ### D. edit flow lacks friendly one-form-per-site validation
@@ -78,6 +78,7 @@ No broad rewrite is done in this round.
 3. `config/database.php` now requires DB env vars (credential fallback removed).
 4. `admin/login.php` has persistent login throttling (`login_attempts`) with old-env session fallback.
 5. `api/inquiry_submit.php` remains explicit `410` deprecation stub.
+6. `admin/form_create.php` now has direct builtin/custom field setup and coherent multi-entity save flow.
 
 These should be treated as stabilized baseline unless regression evidence appears.
 
@@ -140,9 +141,8 @@ These should be treated as stabilized baseline unless regression evidence appear
 ## 5) Execution checklist for next implementation round
 
 - [ ] `form_edit` friendly one-form-per-site conflict message before DB write
-- [ ] create/edit transaction boundaries with rollback
+- [ ] edit flow transaction boundary with rollback (create flow already upgraded this round)
 - [ ] stable key-based field row payload parsing
 - [ ] additive index migration for submit rate limiting query
 - [ ] embed duplicate-init and repeated-listener guard
 - [ ] docs update reflecting what changed vs what remains compatibility-only
-

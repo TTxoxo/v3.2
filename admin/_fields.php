@@ -267,3 +267,57 @@ if (!function_exists('admin_form_field_label_map')) {
         return $map;
     }
 }
+
+if (!function_exists('admin_collect_posted_field_rows')) {
+    function admin_collect_posted_field_rows(array $post): array
+    {
+        $postedKeys = $post['field_key'] ?? [];
+        $postedLabels = $post['field_label'] ?? [];
+        $postedTypes = $post['field_type'] ?? [];
+        $postedRequired = $post['field_required'] ?? [];
+        $postedEnabled = $post['field_enabled'] ?? [];
+        $postedPlaceholder = $post['field_placeholder'] ?? [];
+        $postedOptions = $post['field_options'] ?? [];
+        $postedWidth = $post['field_width'] ?? [];
+        $postedSort = $post['field_sort'] ?? [];
+
+        $rows = [];
+        foreach ($postedKeys as $i => $k) {
+            $rows[] = [
+                'key' => (string) $k,
+                'label' => (string) ($postedLabels[$i] ?? ''),
+                'type' => (string) ($postedTypes[$i] ?? 'text'),
+                'required' => isset($postedRequired[$i]),
+                'enabled' => isset($postedEnabled[$i]),
+                'placeholder' => (string) ($postedPlaceholder[$i] ?? ''),
+                'options' => (string) ($postedOptions[$i] ?? ''),
+                'display_width' => (string) ($postedWidth[$i] ?? 'full'),
+                'sort_order' => (int) ($postedSort[$i] ?? (($i + 1) * 10)),
+            ];
+        }
+
+        return $rows;
+    }
+}
+
+if (!function_exists('admin_default_field_rows')) {
+    function admin_default_field_rows(): array
+    {
+        $rows = [];
+        foreach (admin_builtin_field_specs() as $k => $meta) {
+            $rows[] = [
+                'key' => $k,
+                'label' => $meta['label'],
+                'type' => $meta['type'],
+                'required' => $meta['required'],
+                'enabled' => true,
+                'placeholder' => '',
+                'options' => '',
+                'display_width' => 'full',
+                'sort_order' => $meta['sort_order'],
+                'is_builtin' => true,
+            ];
+        }
+        return $rows;
+    }
+}
