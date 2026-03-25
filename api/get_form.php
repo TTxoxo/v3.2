@@ -5,8 +5,28 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=60, s-maxage=120');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-API-KEY');
+header('Vary: Origin');
+
+function send_get_form_preflight_headers(): void
+{
+    $origin = trim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
+    if ($origin !== '') {
+        header('Access-Control-Allow-Origin: ' . $origin);
+    }
+
+    $requestedHeaders = trim((string) ($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ?? ''));
+    if ($requestedHeaders !== '') {
+        header('Access-Control-Allow-Headers: ' . $requestedHeaders);
+    } else {
+        header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-API-KEY');
+    }
+
+    header('Access-Control-Allow-Methods: GET, OPTIONS');
+    header('Access-Control-Max-Age: 600');
+}
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+    send_get_form_preflight_headers();
     http_response_code(204);
     exit;
 }

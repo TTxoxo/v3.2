@@ -27,6 +27,7 @@ This release finalizes a lightweight-PHP refactor for multi-site inquiry managem
 - Official endpoint fixed to `POST /api/submit.php`.
 - Legacy `POST /api/inquiry_submit.php` now explicit `410 Gone` deprecation stub.
 - Added complete CORS preflight response handling for `OPTIONS` on `api/submit.php` to support browser cross-origin embed submission.
+- Added complete CORS preflight response handling for `OPTIONS` on `api/get_form.php` for cross-origin embed config loading.
 - Submit now requires both:
   - valid API key bound to site,
   - strict origin/referer host match to normalized site domain.

@@ -4,6 +4,7 @@
 - **Official endpoint:** `POST /api/submit.php`
 - Legacy `POST /api/inquiry_submit.php` is now explicitly deprecated and returns `410 Gone`.
 - CORS preflight (`OPTIONS`) now returns complete CORS headers for cross-origin embed requests.
+- `GET /api/get_form.php` preflight (`OPTIONS`) also returns complete CORS headers for cross-origin embed loading.
 
 ## High-level flow
 1. Method / payload guard (`POST`, JSON parse, payload-size limit).

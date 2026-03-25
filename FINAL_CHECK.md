@@ -27,7 +27,7 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 - **Evidence:** all site/form/inquiry operations are keyed around `sites.id` + `forms.site_id`; no per-site database split introduced.
 
 ### Rule 2: Each site has exactly one site user
-- **Status:** PASS at schema level / PARTIAL at runtime adoption
+- **Status:** PARTIALLY DONE (schema level complete, runtime productization deferred)
 - **Evidence:** migration adds `site_users` with unique key on `site_id`.
 - **Note:** current admin flows are still primarily super-admin oriented; full site-user lifecycle UI is not expanded in this stabilization round.
 

@@ -187,3 +187,12 @@
   - CORS preflight behavior,
   - persistent admin login throttling status,
   - current compatibility posture (`form_logs`/`inquiry_logs`, `site_users` lifecycle scope).
+
+## 2026-03-25 - Next-step cleanup follow-up
+
+### CORS consistency cleanup
+- `api/get_form.php` now returns complete CORS preflight headers on `OPTIONS` (origin/methods/headers/max-age + vary).
+- Cross-origin embed form-loading behavior is now aligned with `api/submit.php` preflight handling style.
+
+### Documentation semantics cleanup
+- Updated verification language to clearly mark `site_users` as **partially done** (schema-level complete, runtime productization deferred), avoiding “fully done” ambiguity.
