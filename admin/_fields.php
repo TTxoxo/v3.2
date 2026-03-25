@@ -271,6 +271,31 @@ if (!function_exists('admin_form_field_label_map')) {
 if (!function_exists('admin_collect_posted_field_rows')) {
     function admin_collect_posted_field_rows(array $post): array
     {
+        if (isset($post['fields']) && is_array($post['fields'])) {
+            $rows = [];
+            foreach ($post['fields'] as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+
+                $requiredRaw = $row['required'] ?? null;
+                $enabledRaw = $row['enabled'] ?? null;
+                $rows[] = [
+                    'key' => (string) ($row['key'] ?? ''),
+                    'label' => (string) ($row['label'] ?? ''),
+                    'type' => (string) ($row['type'] ?? 'text'),
+                    'required' => in_array((string) $requiredRaw, ['1', 'on', 'true'], true),
+                    'enabled' => in_array((string) $enabledRaw, ['1', 'on', 'true'], true),
+                    'placeholder' => (string) ($row['placeholder'] ?? ''),
+                    'options' => (string) ($row['options'] ?? ''),
+                    'display_width' => (string) ($row['display_width'] ?? 'full'),
+                    'sort_order' => (int) ($row['sort_order'] ?? 10),
+                ];
+            }
+
+            return $rows;
+        }
+
         $postedKeys = $post['field_key'] ?? [];
         $postedLabels = $post['field_label'] ?? [];
         $postedTypes = $post['field_type'] ?? [];

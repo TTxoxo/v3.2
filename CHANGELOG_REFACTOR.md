@@ -212,3 +212,26 @@
 ### Shared field-post parsing
 - Added reusable helper in `admin/_fields.php` for collecting posted field rows.
 - `admin/form_edit.php` now reuses this helper to reduce duplicated field-post parsing logic.
+
+## 2026-03-25 - Field-row submission correctness + edit transaction/validation hardening
+
+### Field submission structure hardening
+- Refactored create/edit field form submission to robust row-based payload structure:
+  - `fields[row_id][key]`
+  - `fields[row_id][label]`
+  - `fields[row_id][required]`
+  - `fields[row_id][enabled]`
+  - `fields[row_id][placeholder]`
+  - `fields[row_id][options]`
+  - `fields[row_id][display_width]`
+  - `fields[row_id][sort_order]`
+- This avoids fragile numeric index coupling for checkbox state after row delete/add operations.
+- Added backward-compatible parser support in `admin/_fields.php` for legacy post shape.
+
+### Transaction safety
+- Create flow remains transaction-protected for multi-entity persistence.
+- Edit flow now also uses transaction boundaries for form + field + site_settings persistence, with rollback on failure and user-friendly error.
+
+### One-form-per-site friendly validation in edit flow
+- Added explicit business pre-check in `admin/form_edit.php` to detect existing form on target site before save.
+- Returns clear admin-facing error instead of relying on raw DB unique constraint failure.

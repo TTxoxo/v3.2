@@ -166,3 +166,17 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 - **Codebase state:** Stabilized for review and staged deployment.
 - **Risk profile:** Moderate-low with compatibility bridges preserved.
 - **Blocking items before production:** operator-side migration dry run + manual UAT signoff.
+
+## 2026-03-25 follow-up verification (field-row correctness + edit transaction safety)
+
+1. **Field row submission mismatch risk addressed?**
+   - Yes. Create/edit pages now submit row-based nested field payload (`fields[row_id][...]`) to avoid fragile numeric checkbox index coupling.
+
+2. **Create flow transaction-safe?**
+   - Yes. Create flow wraps multi-entity writes in transaction and rolls back on failures.
+
+3. **Edit flow transaction-safe?**
+   - Yes. Edit flow now wraps field/form/site_settings writes in transaction and rolls back on failures.
+
+4. **Friendly one-form-per-site validation in edit flow?**
+   - Yes. Edit flow now checks for existing form on target site before save and returns business-readable error.

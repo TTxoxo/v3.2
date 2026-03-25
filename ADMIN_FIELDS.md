@@ -57,3 +57,17 @@ Admin inquiry pages now display:
   - `forms`
   - `form_fields` (+ compatibility sync to `forms.fields_json`)
   - `site_settings`
+
+## Field submission structure (create/edit)
+To ensure row-state correctness after delete/add/reorder operations, create/edit pages now submit field configs as row-based nested structures:
+- `fields[row_id][key]`
+- `fields[row_id][label]`
+- `fields[row_id][type]`
+- `fields[row_id][required]`
+- `fields[row_id][enabled]`
+- `fields[row_id][placeholder]`
+- `fields[row_id][options]`
+- `fields[row_id][display_width]`
+- `fields[row_id][sort_order]`
+
+`admin_collect_posted_field_rows()` supports this structure and keeps fallback compatibility with legacy array-post format.

@@ -202,33 +202,37 @@ input[type="text"],select,textarea{width:100%}.btn{background:#2563eb;color:#fff
           $key = admin_normalize_field_key((string) ($f['key'] ?? ''));
           $isBuiltin = !empty($f['is_builtin']) || in_array($key, ['name', 'tel', 'email', 'message'], true);
           $type = (string) ($f['type'] ?? 'text');
+          $rowId = 'row_' . $i . '_' . substr(md5((string) ($key ?: $i)), 0, 8);
           ?>
           <tr class="field-row" data-builtin="<?= $isBuiltin ? '1' : '0' ?>">
             <td>
-              <input type="text" name="field_key[]" value="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>" <?= $isBuiltin ? 'readonly' : '' ?> required>
+              <input type="text" name="fields[<?= $rowId ?>][key]" value="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>" <?= $isBuiltin ? 'readonly' : '' ?> required>
               <?php if ($isBuiltin): ?><span class="badge badge-builtin">builtin</span><?php endif; ?>
             </td>
-            <td><input type="text" name="field_label[]" value="<?= htmlspecialchars((string) ($f['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required></td>
+            <td><input type="text" name="fields[<?= $rowId ?>][label]" value="<?= htmlspecialchars((string) ($f['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required></td>
             <td>
-              <select name="field_type[]" <?= $isBuiltin ? 'disabled' : '' ?>>
+              <select name="fields[<?= $rowId ?>][type]" <?= $isBuiltin ? 'disabled' : '' ?>>
                 <?php foreach (['text','email','phone','textarea','select'] as $t): ?>
                   <option value="<?= $t ?>" <?= $type === $t ? 'selected' : '' ?>><?= $t ?></option>
                 <?php endforeach; ?>
               </select>
-              <?php if ($isBuiltin): ?><input type="hidden" name="field_type[]" value="<?= htmlspecialchars($type, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
+              <?php if ($isBuiltin): ?><input type="hidden" name="fields[<?= $rowId ?>][type]" value="<?= htmlspecialchars($type, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
             </td>
-            <td style="text-align:center"><input type="checkbox" name="field_required[<?= $i ?>]" value="1" <?= !empty($f['required']) ? 'checked' : '' ?>></td>
-            <td style="text-align:center"><input type="checkbox" name="field_enabled[<?= $i ?>]" value="1" <?= !empty($f['enabled']) ? 'checked' : '' ?> <?= $isBuiltin ? 'checked disabled' : '' ?>></td>
-            <td><input type="text" name="field_placeholder[]" value="<?= htmlspecialchars((string) ($f['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></td>
-            <td><textarea name="field_options[]" rows="2" placeholder="select 类型可填，逗号分隔"><?= htmlspecialchars((string) ($f['options'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></td>
+            <td style="text-align:center"><input type="checkbox" name="fields[<?= $rowId ?>][required]" value="1" <?= !empty($f['required']) ? 'checked' : '' ?>></td>
+            <td style="text-align:center">
+              <?php if ($isBuiltin): ?><input type="hidden" name="fields[<?= $rowId ?>][enabled]" value="1"><?php endif; ?>
+              <input type="checkbox" name="fields[<?= $rowId ?>][enabled]" value="1" <?= !empty($f['enabled']) ? 'checked' : '' ?> <?= $isBuiltin ? 'checked disabled' : '' ?>>
+            </td>
+            <td><input type="text" name="fields[<?= $rowId ?>][placeholder]" value="<?= htmlspecialchars((string) ($f['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></td>
+            <td><textarea name="fields[<?= $rowId ?>][options]" rows="2" placeholder="select 类型可填，逗号分隔"><?= htmlspecialchars((string) ($f['options'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></td>
             <td>
               <?php $w = (string) ($f['display_width'] ?? 'full'); ?>
-              <select name="field_width[]">
+              <select name="fields[<?= $rowId ?>][display_width]">
                 <option value="full" <?= $w === 'full' ? 'selected' : '' ?>>full</option>
                 <option value="half" <?= $w === 'half' ? 'selected' : '' ?>>half</option>
               </select>
             </td>
-            <td><input type="number" name="field_sort[]" value="<?= (int) ($f['sort_order'] ?? (($i + 1) * 10)) ?>"></td>
+            <td><input type="number" name="fields[<?= $rowId ?>][sort_order]" value="<?= (int) ($f['sort_order'] ?? (($i + 1) * 10)) ?>"></td>
             <td>
               <?php if (!$isBuiltin): ?>
                 <button type="button" onclick="removeFieldRow(this)">删除</button>
@@ -278,19 +282,20 @@ function removeFieldRow(btn) {
 function addCustomFieldRow() {
   var tbody = document.getElementById('fields-body');
   var idx = tbody.querySelectorAll('tr').length;
+  var rowId = 'row_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
   var tr = document.createElement('tr');
   tr.className = 'field-row';
   tr.setAttribute('data-builtin', '0');
   tr.innerHTML = '' +
-    '<td><input type="text" name="field_key[]" placeholder="custom_key_' + idx + '" required></td>' +
-    '<td><input type="text" name="field_label[]" placeholder="字段名称" required></td>' +
-    '<td><select name="field_type[]"><option value="text">text</option><option value="email">email</option><option value="phone">phone</option><option value="textarea">textarea</option><option value="select">select</option></select></td>' +
-    '<td style="text-align:center"><input type="checkbox" name="field_required[' + idx + ']" value="1"></td>' +
-    '<td style="text-align:center"><input type="checkbox" name="field_enabled[' + idx + ']" value="1" checked></td>' +
-    '<td><input type="text" name="field_placeholder[]"></td>' +
-    '<td><textarea name="field_options[]" rows="2"></textarea></td>' +
-    '<td><select name="field_width[]"><option value="full">full</option><option value="half">half</option></select></td>' +
-    '<td><input type="number" name="field_sort[]" value="' + ((idx + 1) * 10) + '"></td>' +
+    '<td><input type="text" name="fields[' + rowId + '][key]" placeholder="custom_key_' + idx + '" required></td>' +
+    '<td><input type="text" name="fields[' + rowId + '][label]" placeholder="字段名称" required></td>' +
+    '<td><select name="fields[' + rowId + '][type]"><option value="text">text</option><option value="email">email</option><option value="phone">phone</option><option value="textarea">textarea</option><option value="select">select</option></select></td>' +
+    '<td style="text-align:center"><input type="checkbox" name="fields[' + rowId + '][required]" value="1"></td>' +
+    '<td style="text-align:center"><input type="checkbox" name="fields[' + rowId + '][enabled]" value="1" checked></td>' +
+    '<td><input type="text" name="fields[' + rowId + '][placeholder]"></td>' +
+    '<td><textarea name="fields[' + rowId + '][options]" rows="2"></textarea></td>' +
+    '<td><select name="fields[' + rowId + '][display_width]"><option value="full">full</option><option value="half">half</option></select></td>' +
+    '<td><input type="number" name="fields[' + rowId + '][sort_order]" value="' + ((idx + 1) * 10) + '"></td>' +
     '<td><button type="button" onclick="removeFieldRow(this)">删除</button></td>';
   tbody.appendChild(tr);
 }

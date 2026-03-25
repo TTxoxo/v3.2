@@ -66,60 +66,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($formName === '' || $siteId <= 0) {
             $error = '请填写表单名称并选择所属站点。';
         } else {
-            $legacyFields = admin_save_form_fields($formId, $rows);
-
-            $up = db()->prepare('UPDATE forms
-                                 SET site_id = :site_id,
-                                     form_name = :form_name,
-                                     fields_json = :fields_json,
-                                     enable_ga4 = :enable_ga4,
-                                     enable_ads = :enable_ads,
-                                     enable_enhanced_conversion = :enable_enhanced_conversion,
-                                     require_gclid = :require_gclid
-                                 WHERE id = :id');
-            $up->execute([
-                ':site_id' => $siteId,
-                ':form_name' => $formName,
-                ':fields_json' => json_encode($legacyFields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                ':enable_ga4' => isset($_POST['enable_ga4']) ? 1 : 0,
-                ':enable_ads' => isset($_POST['enable_ads']) ? 1 : 0,
-                ':enable_enhanced_conversion' => isset($_POST['enable_enhanced_conversion']) ? 1 : 0,
-                ':require_gclid' => isset($_POST['require_gclid']) ? 1 : 0,
-                ':id' => $formId,
-            ]);
-
-            $trackingData = [
-                ':site_id' => $siteId,
-                ':ga4_measurement_id' => trim((string) ($_POST['ga4_measurement_id'] ?? '')),
-                ':ga4_api_secret' => trim((string) ($_POST['ga4_api_secret'] ?? '')),
-                ':ads_conversion_id' => trim((string) ($_POST['ads_conversion_id'] ?? '')),
-                ':ads_conversion_label' => trim((string) ($_POST['ads_conversion_label'] ?? '')),
-                ':smtp_to_email' => trim((string) ($_POST['smtp_to_email'] ?? '')),
-            ];
-
-            $existsStmt = db()->prepare('SELECT id FROM site_settings WHERE site_id = :site_id LIMIT 1');
-            $existsStmt->execute([':site_id' => $siteId]);
-            $exists = $existsStmt->fetch();
-
-            if ($exists) {
-                $saveTrackingSql = 'UPDATE site_settings SET
-                                        ga4_measurement_id = :ga4_measurement_id,
-                                        ga4_api_secret = :ga4_api_secret,
-                                        ads_conversion_id = :ads_conversion_id,
-                                        ads_conversion_label = :ads_conversion_label,
-                                        smtp_to_email = :smtp_to_email
-                                    WHERE site_id = :site_id';
+            $siteFormStmt = db()->prepare('SELECT id FROM forms WHERE site_id = :site_id AND id <> :id LIMIT 1');
+            $siteFormStmt->execute([':site_id' => $siteId, ':id' => $formId]);
+            $conflictForm = $siteFormStmt->fetch();
+            if ($conflictForm) {
+                $error = '该站点已存在主表单，请选择其他站点或编辑该主表单。';
             } else {
-                $saveTrackingSql = 'INSERT INTO site_settings
-                                    (site_id, ga4_measurement_id, ga4_api_secret, ads_conversion_id, ads_conversion_label, smtp_to_email, created_at)
-                                    VALUES
-                                    (:site_id, :ga4_measurement_id, :ga4_api_secret, :ads_conversion_id, :ads_conversion_label, :smtp_to_email, NOW())';
-            }
-            $saveTrackingStmt = db()->prepare($saveTrackingSql);
-            $saveTrackingStmt->execute($trackingData);
+                try {
+                    db()->beginTransaction();
 
-            header('Location: /admin/forms.php');
-            exit;
+                    $legacyFields = admin_save_form_fields($formId, $rows);
+
+                    $up = db()->prepare('UPDATE forms
+                                         SET site_id = :site_id,
+                                             form_name = :form_name,
+                                             fields_json = :fields_json,
+                                             enable_ga4 = :enable_ga4,
+                                             enable_ads = :enable_ads,
+                                             enable_enhanced_conversion = :enable_enhanced_conversion,
+                                             require_gclid = :require_gclid
+                                         WHERE id = :id');
+                    $up->execute([
+                        ':site_id' => $siteId,
+                        ':form_name' => $formName,
+                        ':fields_json' => json_encode($legacyFields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        ':enable_ga4' => isset($_POST['enable_ga4']) ? 1 : 0,
+                        ':enable_ads' => isset($_POST['enable_ads']) ? 1 : 0,
+                        ':enable_enhanced_conversion' => isset($_POST['enable_enhanced_conversion']) ? 1 : 0,
+                        ':require_gclid' => isset($_POST['require_gclid']) ? 1 : 0,
+                        ':id' => $formId,
+                    ]);
+
+                    $trackingData = [
+                        ':site_id' => $siteId,
+                        ':ga4_measurement_id' => trim((string) ($_POST['ga4_measurement_id'] ?? '')),
+                        ':ga4_api_secret' => trim((string) ($_POST['ga4_api_secret'] ?? '')),
+                        ':ads_conversion_id' => trim((string) ($_POST['ads_conversion_id'] ?? '')),
+                        ':ads_conversion_label' => trim((string) ($_POST['ads_conversion_label'] ?? '')),
+                        ':smtp_to_email' => trim((string) ($_POST['smtp_to_email'] ?? '')),
+                    ];
+
+                    $existsStmt = db()->prepare('SELECT id FROM site_settings WHERE site_id = :site_id LIMIT 1');
+                    $existsStmt->execute([':site_id' => $siteId]);
+                    $exists = $existsStmt->fetch();
+
+                    if ($exists) {
+                        $saveTrackingSql = 'UPDATE site_settings SET
+                                                ga4_measurement_id = :ga4_measurement_id,
+                                                ga4_api_secret = :ga4_api_secret,
+                                                ads_conversion_id = :ads_conversion_id,
+                                                ads_conversion_label = :ads_conversion_label,
+                                                smtp_to_email = :smtp_to_email
+                                            WHERE site_id = :site_id';
+                    } else {
+                        $saveTrackingSql = 'INSERT INTO site_settings
+                                            (site_id, ga4_measurement_id, ga4_api_secret, ads_conversion_id, ads_conversion_label, smtp_to_email, created_at)
+                                            VALUES
+                                            (:site_id, :ga4_measurement_id, :ga4_api_secret, :ads_conversion_id, :ads_conversion_label, :smtp_to_email, NOW())';
+                    }
+                    $saveTrackingStmt = db()->prepare($saveTrackingSql);
+                    $saveTrackingStmt->execute($trackingData);
+
+                    db()->commit();
+
+                    header('Location: /admin/forms.php');
+                    exit;
+                } catch (Throwable $e) {
+                    if (db()->inTransaction()) {
+                        db()->rollBack();
+                    }
+                    $error = '保存失败，请检查输入配置后重试。';
+                }
+            }
         }
 
         $fields = admin_load_form_fields((int) $form['id'], json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]');
@@ -176,33 +194,37 @@ input[type="text"],select,textarea{width:100%}.btn{background:#2563eb;color:#fff
         <tbody id="fields-body">
         <?php foreach ($fields as $i => $f): ?>
           <?php $isBuiltin = !empty($f['is_builtin']); ?>
+          <?php $rowId = 'row_' . $i . '_' . substr(md5((string) ($f['key'] ?? $i)), 0, 8); ?>
           <tr class="field-row" data-builtin="<?= $isBuiltin ? '1' : '0' ?>">
             <td>
-              <input type="text" name="field_key[]" value="<?= htmlspecialchars((string) $f['key'], ENT_QUOTES, 'UTF-8') ?>" <?= $isBuiltin ? 'readonly' : '' ?> required>
+              <input type="text" name="fields[<?= $rowId ?>][key]" value="<?= htmlspecialchars((string) $f['key'], ENT_QUOTES, 'UTF-8') ?>" <?= $isBuiltin ? 'readonly' : '' ?> required>
               <?php if ($isBuiltin): ?><span class="badge badge-builtin">builtin</span><?php endif; ?>
             </td>
-            <td><input type="text" name="field_label[]" value="<?= htmlspecialchars((string) $f['label'], ENT_QUOTES, 'UTF-8') ?>" required></td>
+            <td><input type="text" name="fields[<?= $rowId ?>][label]" value="<?= htmlspecialchars((string) $f['label'], ENT_QUOTES, 'UTF-8') ?>" required></td>
             <td>
               <?php $type = (string) ($f['type'] ?? 'text'); ?>
-              <select name="field_type[]" <?= $isBuiltin ? 'disabled' : '' ?>>
+              <select name="fields[<?= $rowId ?>][type]" <?= $isBuiltin ? 'disabled' : '' ?>>
                 <?php foreach (['text','email','phone','textarea','select'] as $t): ?>
                   <option value="<?= $t ?>" <?= $type === $t ? 'selected' : '' ?>><?= $t ?></option>
                 <?php endforeach; ?>
               </select>
-              <?php if ($isBuiltin): ?><input type="hidden" name="field_type[]" value="<?= htmlspecialchars($type, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
+              <?php if ($isBuiltin): ?><input type="hidden" name="fields[<?= $rowId ?>][type]" value="<?= htmlspecialchars($type, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
             </td>
-            <td style="text-align:center"><input type="checkbox" name="field_required[<?= $i ?>]" value="1" <?= !empty($f['required']) ? 'checked' : '' ?>></td>
-            <td style="text-align:center"><input type="checkbox" name="field_enabled[<?= $i ?>]" value="1" <?= !empty($f['enabled']) ? 'checked' : '' ?> <?= $isBuiltin ? 'checked disabled' : '' ?>></td>
-            <td><input type="text" name="field_placeholder[]" value="<?= htmlspecialchars((string) ($f['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></td>
-            <td><textarea name="field_options[]" rows="2" placeholder="select 类型可填，逗号分隔"><?= htmlspecialchars((string) ($f['options'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></td>
+            <td style="text-align:center"><input type="checkbox" name="fields[<?= $rowId ?>][required]" value="1" <?= !empty($f['required']) ? 'checked' : '' ?>></td>
+            <td style="text-align:center">
+              <?php if ($isBuiltin): ?><input type="hidden" name="fields[<?= $rowId ?>][enabled]" value="1"><?php endif; ?>
+              <input type="checkbox" name="fields[<?= $rowId ?>][enabled]" value="1" <?= !empty($f['enabled']) ? 'checked' : '' ?> <?= $isBuiltin ? 'checked disabled' : '' ?>>
+            </td>
+            <td><input type="text" name="fields[<?= $rowId ?>][placeholder]" value="<?= htmlspecialchars((string) ($f['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></td>
+            <td><textarea name="fields[<?= $rowId ?>][options]" rows="2" placeholder="select 类型可填，逗号分隔"><?= htmlspecialchars((string) ($f['options'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></td>
             <td>
               <?php $w = (string) ($f['display_width'] ?? 'full'); ?>
-              <select name="field_width[]">
+              <select name="fields[<?= $rowId ?>][display_width]">
                 <option value="full" <?= $w === 'full' ? 'selected' : '' ?>>full</option>
                 <option value="half" <?= $w === 'half' ? 'selected' : '' ?>>half</option>
               </select>
             </td>
-            <td><input type="number" name="field_sort[]" value="<?= (int) ($f['sort_order'] ?? (($i + 1) * 10)) ?>"></td>
+            <td><input type="number" name="fields[<?= $rowId ?>][sort_order]" value="<?= (int) ($f['sort_order'] ?? (($i + 1) * 10)) ?>"></td>
             <td>
               <?php if (!$isBuiltin): ?>
                 <button type="button" onclick="removeFieldRow(this)">删除</button>
@@ -252,19 +274,20 @@ function removeFieldRow(btn) {
 function addCustomFieldRow() {
   var tbody = document.getElementById('fields-body');
   var idx = tbody.querySelectorAll('tr').length;
+  var rowId = 'row_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
   var tr = document.createElement('tr');
   tr.className = 'field-row';
   tr.setAttribute('data-builtin', '0');
   tr.innerHTML = '' +
-    '<td><input type="text" name="field_key[]" placeholder="custom_key_' + idx + '" required></td>' +
-    '<td><input type="text" name="field_label[]" placeholder="字段名称" required></td>' +
-    '<td><select name="field_type[]"><option value="text">text</option><option value="email">email</option><option value="phone">phone</option><option value="textarea">textarea</option><option value="select">select</option></select></td>' +
-    '<td style="text-align:center"><input type="checkbox" name="field_required[' + idx + ']" value="1"></td>' +
-    '<td style="text-align:center"><input type="checkbox" name="field_enabled[' + idx + ']" value="1" checked></td>' +
-    '<td><input type="text" name="field_placeholder[]"></td>' +
-    '<td><textarea name="field_options[]" rows="2"></textarea></td>' +
-    '<td><select name="field_width[]"><option value="full">full</option><option value="half">half</option></select></td>' +
-    '<td><input type="number" name="field_sort[]" value="' + ((idx + 1) * 10) + '"></td>' +
+    '<td><input type="text" name="fields[' + rowId + '][key]" placeholder="custom_key_' + idx + '" required></td>' +
+    '<td><input type="text" name="fields[' + rowId + '][label]" placeholder="字段名称" required></td>' +
+    '<td><select name="fields[' + rowId + '][type]"><option value="text">text</option><option value="email">email</option><option value="phone">phone</option><option value="textarea">textarea</option><option value="select">select</option></select></td>' +
+    '<td style="text-align:center"><input type="checkbox" name="fields[' + rowId + '][required]" value="1"></td>' +
+    '<td style="text-align:center"><input type="checkbox" name="fields[' + rowId + '][enabled]" value="1" checked></td>' +
+    '<td><input type="text" name="fields[' + rowId + '][placeholder]"></td>' +
+    '<td><textarea name="fields[' + rowId + '][options]" rows="2"></textarea></td>' +
+    '<td><select name="fields[' + rowId + '][display_width]"><option value="full">full</option><option value="half">half</option></select></td>' +
+    '<td><input type="number" name="fields[' + rowId + '][sort_order]" value="' + ((idx + 1) * 10) + '"></td>' +
     '<td><button type="button" onclick="removeFieldRow(this)">删除</button></td>';
   tbody.appendChild(tr);
 }

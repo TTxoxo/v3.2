@@ -23,26 +23,21 @@ No broad rewrite is done in this round.
   - create page now directly renders builtin rows, supports add custom field rows, and allows editing field settings before first save. (`admin/form_create.php`)
 
 ### B. edit page has field row index mismatch risk
-- **Status: CONFIRMED PRESENT (frontend naming risk still exists)**
+- **Status: FIXED IN CURRENT ROUND**
 - Evidence:
-  - checkbox names use index-based keys `field_required[i]` / `field_enabled[i]`.
-  - add/remove row operations are DOM-dynamic and rely on generated `idx` at insert time.
-  - backend rebuild uses parallel arrays and `isset($postedRequired[$i])` / `isset($postedEnabled[$i])`.
-- Risk:
-  - when rows are deleted/reordered client-side, sparse/misaligned checkbox indexes can make intent less explicit and harder to reason about.
+  - create/edit now submit row-based nested fields payload (`fields[row_id][...]`), decoupling checkbox states from fragile numeric indexes.
+  - backend collector supports robust row-based parsing.
 
 ### C. create/edit flows are not transaction-safe
-- **Status: PARTIALLY FIXED (create improved, edit still pending)**
+- **Status: FIXED IN CURRENT ROUND**
 - Evidence:
-  - create flow now wraps multi-write persistence in transaction boundary.
-  - edit flow still performs multiple writes without transaction boundary: save form_fields -> update forms -> upsert site_settings.
-  - helper `admin_save_form_fields()` does delete + reinsert pattern without outer transaction.
+  - create flow wraps multi-write persistence in transaction boundary.
+  - edit flow now wraps multi-write persistence in transaction boundary with rollback on failure.
 
 ### D. edit flow lacks friendly one-form-per-site validation
-- **Status: CONFIRMED PRESENT**
+- **Status: FIXED IN CURRENT ROUND**
 - Evidence:
-  - edit flow allows changing `site_id` and directly updates `forms.site_id` without pre-check for existing form on target site.
-  - expected uniqueness conflict is left to DB unique constraint behavior, with no user-friendly message path.
+  - edit flow now performs explicit conflict pre-check (`site_id` target already having another form) and returns business-readable error before DB constraint failure.
 
 ### E. submit rate-limit query lacks ideal composite index
 - **Status: CONFIRMED PRESENT**
@@ -79,6 +74,8 @@ No broad rewrite is done in this round.
 4. `admin/login.php` has persistent login throttling (`login_attempts`) with old-env session fallback.
 5. `api/inquiry_submit.php` remains explicit `410` deprecation stub.
 6. `admin/form_create.php` now has direct builtin/custom field setup and coherent multi-entity save flow.
+7. `admin/form_edit.php` now has transaction-safe save flow + friendly one-form-per-site pre-check.
+8. create/edit field submission now uses robust row-based nested structure.
 
 These should be treated as stabilized baseline unless regression evidence appears.
 
@@ -140,9 +137,9 @@ These should be treated as stabilized baseline unless regression evidence appear
 
 ## 5) Execution checklist for next implementation round
 
-- [ ] `form_edit` friendly one-form-per-site conflict message before DB write
-- [ ] edit flow transaction boundary with rollback (create flow already upgraded this round)
-- [ ] stable key-based field row payload parsing
+- [x] `form_edit` friendly one-form-per-site conflict message before DB write
+- [x] edit flow transaction boundary with rollback (create flow already upgraded this round)
+- [x] stable key-based field row payload parsing
 - [ ] additive index migration for submit rate limiting query
 - [ ] embed duplicate-init and repeated-listener guard
 - [ ] docs update reflecting what changed vs what remains compatibility-only
