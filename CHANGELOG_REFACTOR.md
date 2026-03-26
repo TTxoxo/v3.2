@@ -199,6 +199,15 @@
 
 ## 2026-03-25 - Create-page field product gap closure
 
+## 2026-03-26 - Submit log sanitization hardening
+
+### Security hardening
+- `api/submit.php` no longer writes raw exception messages for integration/API failures into application logs.
+- Added structured exception logging helper to record safe metadata only (`exception` class + `code`) and avoid accidental secret leakage from downstream SDK error payloads.
+
+### Scope note
+- This change is intentionally low-risk and does not alter submit validation rules, persistence flow, or response payload contracts.
+
 ### Admin create form UX
 - `admin/form_create.php` now directly renders builtin system fields (`name`, `tel`, `email`, `message`) on create page.
 - Builtin rows are clearly marked and non-deletable.

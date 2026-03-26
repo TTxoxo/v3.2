@@ -48,6 +48,14 @@ function write_log(string $message, array $context = []): void
     error_log($line, 3, $config['logging']['path']);
 }
 
+function sanitized_error_for_log(Throwable $e): array
+{
+    return [
+        'exception' => get_class($e),
+        'code' => (string) $e->getCode(),
+    ];
+}
+
 function respond(int $statusCode, array $payload): void
 {
     http_response_code($statusCode);
@@ -475,7 +483,10 @@ try {
     } catch (Throwable $mailEx) {
         $mailStatus = 'failed';
         $errors[] = 'mail failed';
-        write_log('submit integration mail failed', ['inquiry_id' => $inquiryId, 'reason' => $mailEx->getMessage()]);
+        write_log('submit integration mail failed', [
+            'inquiry_id' => $inquiryId,
+            'error' => sanitized_error_for_log($mailEx),
+        ]);
     }
 
     if ((int) $form['enable_ga4'] === 1) {
@@ -514,7 +525,10 @@ try {
         } catch (Throwable $ga4Ex) {
             $ga4Status = 'failed';
             $errors[] = 'ga4 failed';
-            write_log('submit integration ga4 failed', ['inquiry_id' => $inquiryId, 'reason' => $ga4Ex->getMessage()]);
+            write_log('submit integration ga4 failed', [
+                'inquiry_id' => $inquiryId,
+                'error' => sanitized_error_for_log($ga4Ex),
+            ]);
         }
     }
 
@@ -537,7 +551,10 @@ try {
         } catch (Throwable $adsEx) {
             $adsStatus = 'failed';
             $errors[] = 'ads failed';
-            write_log('submit integration ads failed', ['inquiry_id' => $inquiryId, 'reason' => $adsEx->getMessage()]);
+            write_log('submit integration ads failed', [
+                'inquiry_id' => $inquiryId,
+                'error' => sanitized_error_for_log($adsEx),
+            ]);
         }
     }
 
@@ -554,7 +571,10 @@ try {
             ':error_message' => $errors ? implode(' | ', $errors) : null,
         ]);
     } catch (Throwable $logEx) {
-        write_log('submit integration log write failed', ['inquiry_id' => $inquiryId, 'reason' => $logEx->getMessage()]);
+        write_log('submit integration log write failed', [
+            'inquiry_id' => $inquiryId,
+            'error' => sanitized_error_for_log($logEx),
+        ]);
     }
 
     respond(200, [
@@ -563,9 +583,13 @@ try {
         'inquiry_id' => $inquiryId,
     ]);
 } catch (JsonException $e) {
-    write_log('submit invalid json', ['reason' => $e->getMessage()]);
+    write_log('submit invalid json', ['error' => sanitized_error_for_log($e)]);
     respond(422, ['status' => 'error', 'message' => 'Invalid JSON payload']);
 } catch (Throwable $e) {
-    write_log('submit api error', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    write_log('submit api error', [
+        'error' => sanitized_error_for_log($e),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+    ]);
     respond(500, ['status' => 'error', 'message' => 'Internal Server Error']);
 }

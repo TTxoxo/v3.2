@@ -218,6 +218,17 @@ This round scope: final validation, regression checks, low-risk cleanup, deliver
 
 ## 2026-03-25 follow-up verification (embed duplicate-init safety round)
 
+## 2026-03-26 follow-up verification (submit log secret-minimization round)
+
+1. **Raw integration/API exception text still written to logs?**
+   - No. `api/submit.php` now records safe structured metadata (`exception` class + `code`) for error contexts.
+
+2. **Security requirement “avoid logging raw secrets” improved?**
+   - Yes. Mail/GA4/Ads failure logging and top-level API error logging no longer include `Throwable::getMessage()` content.
+
+3. **Behavioral/API regression risk from this round?**
+   - Low. This round only changes log content shape; submit request validation, DB writes, and response schema remain unchanged.
+
 1. **Duplicate init on same page controlled?**
    - Yes. `embed/embed.js` now guards by same `api_key + mode + target` and returns early for repeated identical reinjection.
 
