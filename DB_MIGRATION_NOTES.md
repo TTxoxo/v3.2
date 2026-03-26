@@ -3,6 +3,14 @@
 ## Scope
 This document explains operational sequencing, backfill behavior, and compatibility notes for the migration SQL introduced in this round.
 
+## Fresh-install one-shot option
+For brand-new empty databases, a consolidated import file is available:
+- `multisite_inquiry_full_install.sql`
+
+This file applies the converged final schema directly (including trigger definitions), and is useful for environments where stepwise migration execution may hit client/protocol limits (e.g., prepared-statement trigger creation limitations).
+
+For existing/legacy production databases, continue to use the stepwise migration route below.
+
 ## Migration order
 Run in strict sequence:
 1. `database/migrations/20260324_001_schema_additive.sql`

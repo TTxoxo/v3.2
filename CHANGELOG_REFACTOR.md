@@ -309,3 +309,16 @@
   - submit hot-path composite index details
   - embed duplicate-init/listener safety notes
   - final validation scope statement.
+
+## 2026-03-26 - Fresh-install consolidated SQL bundle
+
+### Added
+- `multisite_inquiry_full_install.sql`
+
+### Purpose
+- Provide a one-shot, executable, final-state schema import for brand-new empty databases.
+- Avoid migration-client incompatibilities in some environments (notably prepared-statement trigger creation limitations).
+
+### Notes
+- Keeps compatibility tables/bridges expected by current runtime (`fields_json`, `form_logs`, `inquiry_logs` sync triggers).
+- Existing databases should continue to use incremental migration scripts.

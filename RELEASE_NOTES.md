@@ -66,6 +66,12 @@ This release finalizes a lightweight-PHP refactor for multi-site inquiry managem
 - Validate post-migration invariants with queries from `DB_MIGRATION_NOTES.md`.
 - Keep compatibility bridges during first rollout window.
 
+## 6.1) Fresh-install import shortcut
+- Added one-shot full install file: `multisite_inquiry_full_install.sql`.
+- Intended for brand-new empty databases.
+- Includes final converged schema + compatibility triggers using direct trigger creation (avoids prepared-statement trigger protocol limitation encountered in some environments).
+- Existing/legacy databases should still follow stepwise migration scripts.
+
 ## 7) Rollout notes
 Recommended staged rollout:
 1. Deploy code + docs.
