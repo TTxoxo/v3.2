@@ -64,16 +64,17 @@ $listStmt->execute();
 $forms = $listStmt->fetchAll();
 ?>
 <?php admin_ui_start('表单管理', 'forms'); ?>
-<style>
-.container{max-width:1200px;margin:0 auto}.btn{display:inline-block;padding:6px 10px;border-radius:6px;text-decoration:none;border:0;cursor:pointer}.btn-create{background:#2563eb;color:#fff}.btn-edit{background:#059669;color:#fff}.btn-del{background:#dc2626;color:#fff}.meta{font-size:12px;color:#374151;line-height:1.6}pre{background:#f9fafb;padding:8px;border-radius:6px;max-width:420px;overflow:auto;font-size:12px}
-</style>
 <div class="container">
-    <a class="btn btn-create" href="/admin/form_create.php">+ 创建表单</a>
+    <div class="page-head">
+        <h2 class="page-title">表单列表</h2>
+        <a class="btn btn-primary" href="/admin/form_create.php">+ 创建表单</a>
+    </div>
 
     <?php if ($message !== ''): ?><div class="msg ok"><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
     <?php if ($error !== ''): ?><div class="msg err"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
-    <table>
+    <div class="panel table-wrap">
+    <table class="table">
         <thead>
         <tr>
             <th>ID</th>
@@ -93,20 +94,20 @@ $forms = $listStmt->fetchAll();
                     <td><?= (int) $form['id'] ?></td>
                     <td><?= htmlspecialchars((string) $form['form_name'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string) $form['site_name'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td class="meta">
+                    <td class="text-muted">
                         enable_ga4: <?= (int) $form['enable_ga4'] ?><br>
                         enable_ads: <?= (int) $form['enable_ads'] ?><br>
                         enable_enhanced_conversion: <?= (int) $form['enable_enhanced_conversion'] ?><br>
                         require_gclid: <?= (int) $form['require_gclid'] ?>
                     </td>
-                    <td><?= htmlspecialchars((string) $form['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars(admin_format_datetime((string) $form['created_at']), ENT_QUOTES, 'UTF-8') ?></td>
                     <td>
-                        <a class="btn btn-edit" href="/admin/form_edit.php?id=<?= (int) $form['id'] ?>">编辑</a>
+                        <a class="btn btn-success btn-sm" href="/admin/form_edit.php?id=<?= (int) $form['id'] ?>">编辑</a>
                         <form method="post" action="" style="display:inline" onsubmit="return confirm('确认删除该表单？');">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="form_id" value="<?= (int) $form['id'] ?>">
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars((string) $_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
-                            <button class="btn btn-del" type="submit">删除</button>
+                            <button class="btn btn-danger btn-sm" type="submit">删除</button>
                         </form>
                     </td>
                 </tr>
@@ -114,6 +115,7 @@ $forms = $listStmt->fetchAll();
         <?php endif; ?>
         </tbody>
     </table>
+    </div>
 
     <div class="pager">
         <?php for ($i = 1; $i <= $totalPages; $i++): ?>

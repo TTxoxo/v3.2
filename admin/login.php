@@ -7,6 +7,89 @@ require __DIR__ . '/../config/database.php';
 
 date_default_timezone_set($config['app']['timezone']);
 
+function login_attempts_table_exists(): bool
+{
+    static $exists = null;
+    if (is_bool($exists)) {
+        return $exists;
+    }
+
+    try {
+        $stmt = db()->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table LIMIT 1');
+        $stmt->execute([':table' => 'login_attempts']);
+        $exists = (bool) $stmt->fetchColumn();
+    } catch (Throwable $e) {
+        $exists = false;
+    }
+
+    return $exists;
+}
+
+function client_ip(): string
+{
+    return trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+}
+
+function login_window_attempts(string $username, string $ip, int $minutes = 15): int
+{
+    if (!login_attempts_table_exists()) {
+        return (int) ($_SESSION['login_attempts'] ?? 0);
+    }
+
+    $minutes = max(1, $minutes);
+    $stmt = db()->prepare('SELECT COUNT(*)
+                           FROM login_attempts
+                           WHERE account_type = :account_type
+                             AND account_identifier = :account_identifier
+                             AND ip_address = :ip_address
+                             AND attempted_at >= DATE_SUB(NOW(), INTERVAL ' . $minutes . ' MINUTE)');
+    $stmt->execute([
+        ':account_type' => 'admin',
+        ':account_identifier' => $username,
+        ':ip_address' => $ip,
+    ]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function record_login_attempt(string $username, string $ip, bool $success): void
+{
+    if (!login_attempts_table_exists()) {
+        if ($success) {
+            $_SESSION['login_attempts'] = 0;
+        } else {
+            $_SESSION['login_attempts'] = (int) ($_SESSION['login_attempts'] ?? 0) + 1;
+        }
+        return;
+    }
+
+    if ($success) {
+        $stmt = db()->prepare('DELETE FROM login_attempts
+                               WHERE account_type = :account_type
+                                 AND account_identifier = :account_identifier
+                                 AND ip_address = :ip_address');
+        $stmt->execute([
+            ':account_type' => 'admin',
+            ':account_identifier' => $username,
+            ':ip_address' => $ip,
+        ]);
+        $_SESSION['login_attempts'] = 0;
+        return;
+    }
+
+    $stmt = db()->prepare('INSERT INTO login_attempts
+                           (account_type, account_identifier, ip_address, user_agent, attempted_at, is_success)
+                           VALUES
+                           (:account_type, :account_identifier, :ip_address, :user_agent, NOW(), :is_success)');
+    $stmt->execute([
+        ':account_type' => 'admin',
+        ':account_identifier' => $username,
+        ':ip_address' => $ip !== '' ? $ip : null,
+        ':user_agent' => trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')) ?: null,
+        ':is_success' => 0,
+    ]);
+}
+
 $systemName = '外贸询盘系统';
 $loginName = '询盘系统后台';
 $loginTitle = 'H5 扁平化管理界面';
@@ -26,9 +109,6 @@ try {
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
-if (!isset($_SESSION['login_attempts'])) {
-    $_SESSION['login_attempts'] = 0;
-}
 if (!empty($_SESSION['admin_user_id'])) {
     header('Location: /admin/dashboard.php');
     exit;
@@ -39,29 +119,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrf = (string) ($_POST['csrf_token'] ?? '');
     if (!hash_equals((string) $_SESSION['csrf_token'], $csrf)) {
         $error = '非法请求，请刷新后重试。';
-    } elseif ($_SESSION['login_attempts'] >= 5) {
-        $error = '登录失败次数过多，请稍后再试。';
     } else {
         $username = trim((string) ($_POST['username'] ?? ''));
         $password = (string) ($_POST['password'] ?? '');
+        $ip = client_ip();
+        $attemptCount = login_window_attempts($username, $ip, 15);
+        $maxAttempts = 5;
 
-        $stmt = db()->prepare('SELECT id, username, password FROM admin_users WHERE username = :username LIMIT 1');
-        $stmt->execute([':username' => $username]);
-        $user = $stmt->fetch();
+        if ($attemptCount >= $maxAttempts) {
+            $error = '登录失败次数过多，请 15 分钟后再试。';
+        } else {
+            $stmt = db()->prepare('SELECT id, username, password FROM admin_users WHERE username = :username LIMIT 1');
+            $stmt->execute([':username' => $username]);
+            $user = $stmt->fetch();
 
-        if ($user && password_verify($password, (string) $user['password'])) {
-            session_regenerate_id(true);
-            $_SESSION['admin_user_id'] = (int) $user['id'];
-            $_SESSION['admin_username'] = (string) $user['username'];
-            $_SESSION['login_attempts'] = 0;
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-            header('Location: /admin/dashboard.php');
-            exit;
+            if ($user && password_verify($password, (string) $user['password'])) {
+                record_login_attempt($username, $ip, true);
+                session_regenerate_id(true);
+                $_SESSION['admin_user_id'] = (int) $user['id'];
+                $_SESSION['admin_username'] = (string) $user['username'];
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                header('Location: /admin/dashboard.php');
+                exit;
+            }
+
+            record_login_attempt($username, $ip, false);
+            $newAttemptCount = login_window_attempts($username, $ip, 15);
+            $remaining = max(0, $maxAttempts - $newAttemptCount);
+            $error = $remaining > 0 ? "用户名或密码错误，15 分钟内剩余尝试 {$remaining} 次。" : '登录失败次数过多，请 15 分钟后再试。';
         }
-
-        $_SESSION['login_attempts']++;
-        $remaining = max(0, 5 - (int) $_SESSION['login_attempts']);
-        $error = $remaining > 0 ? "用户名或密码错误，剩余尝试 {$remaining} 次。" : '登录失败次数过多，请稍后再试。';
     }
 }
 ?>
@@ -71,6 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars($loginName, ENT_QUOTES, 'UTF-8') ?></title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css">
+<link rel="stylesheet" href="/admin/assets/admin.css">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:radial-gradient(circle at top,#e8f0ff 0%,#f8faff 46%,#f3f6fb 100%);font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;color:#111827}
@@ -81,8 +168,8 @@ h1{margin:0 0 4px;font-size:25px;font-weight:700;color:#0f172a}.sub{margin:0 0 2
 label{display:block;font-size:13px;color:#344054;margin:12px 0 6px;font-weight:600}
 input{width:100%;padding:11px 12px;border:1px solid #d4dbe7;border-radius:10px;outline:none}
 input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
-button{width:100%;margin-top:16px;padding:11px;border:0;border-radius:10px;background:#206bc4;color:#fff;font-weight:600;cursor:pointer}
-button:hover{background:#1a5aa8}
+button{width:100%;margin-top:16px;padding:11px;border:0;border-radius:10px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer}
+button:hover{background:var(--brand-dark)}
 .error{margin-top:12px;padding:10px;border-radius:10px;background:#fff1f2;color:#9f1239;font-size:13px;border:1px solid #fecdd3}
 .hint{margin-top:12px;color:#6b7280;font-size:12px}
 .system{margin-top:4px;color:#94a3b8;font-size:12px}
